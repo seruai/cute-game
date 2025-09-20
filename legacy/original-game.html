@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>아기고래 쿠아</title>
+</head>
+<body>
+    <canvas id="game" width="800" height="800" style="border:1px solid #000"></canvas>
+    <div>점수: <span id="score">0</span> | 크기: <span id="size">15</span>px | 레벨: <span id="level">1</span>/10 | <button id="muteBtn" onclick="toggleMute()">🔊</button></div>
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        
+        let player = {x:400, y:400, radius:15, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0};
+        let foods = [];
+        let enemies = [];
+        let sharks = [];
+        let powerUps = [];
+        let bonusFish = [];
+        let particles = [];
+        let keys = {};
+        let gameState = 'playing';
+        let warningTime = 0;
+        let foodSpawnTimer = 0;
+        let enemySpawnTimer = 0;
+        let sharkSpawnTimer = 0;
+        let gameTime = 0;
+        let levelUpFlash = 0;
+        let audioContext;
+        let isMuted = false;
+        let isPaused = false;
+        
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) {
+                console.log('Audio not supported');
+            }
+        }
+        
+        function playSound(frequency, duration, type = 'sine') {
+            if(!audioContext || isMuted) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+        }
+        
+        function spawnFood() {
+            let baseSpeed = 1.0 + (player.level - 1) * 0.05;
+            let speed = baseSpeed * (0.8 + Math.random() * 0.4);
+            
+            let side = Math.floor(Math.random() * 4);
+            let x, y, speedX, speedY;
+            
+            switch(side) {
+                case 0:
+                    x = 820;
+                    y = Math.random() * 700 + 50;
+                    speedX = -speed;
+                    speedY = 0;
+                    break;
+                case 1:
+                    x = -20;
+                    y = Math.random() * 700 + 50;
+                    speedX = speed;
+                    speedY = 0;
+                    break;
+                case 2:
+                    x = Math.random() * 700 + 50;
+                    y = 820;
+                    speedX = 0;
+                    speedY = -speed;
+                    break;
+                case 3:
+                    x = Math.random() * 700 + 50;
+                    y = -20;
+                    speedX = 0;
+                    speedY = speed;
+                    break;
+            }
+            
+            foods.push({
+                x: x,
+                y: y,
+                radius: 5,
+                speedX: speedX,
+                speedY: speedY,
+                floatY: Math.random() * Math.PI * 2,
+                floatSpeed: 0.02 + Math.random() * 0.01,
+                floatAmplitude: 10 + Math.random() * 15
+            });
+        }
+        
+        function spawnPowerUp() {
+            if(Math.random() < 0.05) {
+                let side = Math.floor(Math.random() * 4);
+                let x, y, speedX, speedY;
+                
+                switch(side) {
+                    case 0: x = 820; y = Math.random() * 700 + 50; speedX = -0.8; speedY = 0; break;
+                    case 1: x = -20; y = Math.random() * 700 + 50; speedX = 0.8; speedY = 0; break;
+                    case 2: x = Math.random() * 700 + 50; y = 820; speedX = 0; speedY = -0.8; break;
+                    case 3: x = Math.random() * 700 + 50; y = -20; speedX = 0; speedY = 0.8; break;
+                }
+                
+                powerUps.push({
+                    x: x, y: y, radius: 8, speedX: speedX, speedY: speedY,
+                    floatY: Math.random() * Math.PI * 2, floatSpeed: 0.03, floatAmplitude: 20
+                });
+            }
+            
+            if(Math.random() < 0.02) {
+                let side = Math.floor(Math.random() * 4);
+                let x, y, speedX, speedY;
+                
+                switch(side) {
+                    case 0: x = 820; y = Math.random() * 700 + 50; speedX = -0.6; speedY = 0; break;
+                    case 1: x = -20; y = Math.random() * 700 + 50; speedX = 0.6; speedY = 0; break;
+                    case 2: x = Math.random() * 700 + 50; y = 820; speedX = 0; speedY = -0.6; break;
+                    case 3: x = Math.random() * 700 + 50; y = -20; speedX = 0; speedY = 0.6; break;
+                }
+                
+                bonusFish.push({
+                    x: x, y: y, radius: 12, speedX: speedX, speedY: speedY,
+                    floatY: Math.random() * Math.PI * 2, floatSpeed: 0.02, floatAmplitude: 25
+                });
+            }
+        }
+        
+        function spawnEnemy() {
+            let side = Math.floor(Math.random() * 4);
+            let x, y, directionX, directionY;
+            let speed = 0.8 + Math.random() * 0.4;
+            
+            switch(side) {
+                case 0:
+                    x = -50;
+                    y = Math.random() * 800;
+                    directionX = 1;
+                    directionY = (Math.random() - 0.5) * 0.5;
+                    break;
+                case 1:
+                    x = 850;
+                    y = Math.random() * 800;
+                    directionX = -1;
+                    directionY = (Math.random() - 0.5) * 0.5;
+                    break;
+                case 2:
+                    x = Math.random() * 800;
+                    y = -50;
+                    directionX = (Math.random() - 0.5) * 0.5;
+                    directionY = 1;
+                    break;
+                case 3:
+                    x = Math.random() * 800;
+                    y = 850;
+                    directionX = (Math.random() - 0.5) * 0.5;
+                    directionY = -1;
+                    break;
+            }
+            
+            enemies.push({
+                x: x,
+                y: y,
+                radius: 25,
+                directionX: directionX,
+                directionY: directionY,
+                speed: speed,
+                life: 600
+            });
+        }
+        
+        function spawnShark() {
+            let side = Math.floor(Math.random() * 4);
+            let x, y;
+            
+            switch(side) {
+                case 0: x = -60; y = Math.random() * 800; break;
+                case 1: x = 860; y = Math.random() * 800; break;
+                case 2: x = Math.random() * 800; y = -60; break;
+                case 3: x = Math.random() * 800; y = 860; break;
+            }
+            
+            sharks.push({
+                x: x,
+                y: y,
+                size: 30,
+                speed: 1.0,
+                life: 900
+            });
+        }
+        
+        function drawTriangle(x, y, size, rotation) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size/2, -size/2);
+            ctx.lineTo(-size/2, size/2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function drawCua(x, y, radius, moveX, moveY, isGameOver = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            let angle = 0;
+            if(moveX !== 0 || moveY !== 0) {
+                angle = Math.atan2(moveY, moveX);
+            }
+            ctx.rotate(angle);
+            
+            ctx.fillStyle = '#4A90E2';
+            if(player.isInvincible) {
+                ctx.globalAlpha = 0.5;
+            }
+            
+            ctx.beginPath();
+            ctx.ellipse(0, 0, radius * 1.2, radius * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(-radius * 1.2, 0);
+            ctx.lineTo(-radius * 1.8, -radius * 0.6);
+            ctx.lineTo(-radius * 1.8, radius * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.globalAlpha = 1.0;
+            
+            let eyeOffset = radius * 0.4;
+            ctx.beginPath();
+            ctx.arc(eyeOffset, -radius * 0.3, radius * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(eyeOffset, radius * 0.3, radius * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = Math.max(2, radius * 0.08);
+            ctx.beginPath();
+            if(isGameOver) {
+                ctx.arc(eyeOffset * 1.8, 0, radius * 0.2, Math.PI, 0);
+            } else {
+                ctx.arc(eyeOffset * 1.8, 0, radius * 0.2, 0, Math.PI);
+            }
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        
+        function drawFish(x, y, radius, color = '#FF6B6B', direction = -1) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            if(typeof direction === 'number' && direction > 10) {
+                ctx.rotate(direction === 90 ? -Math.PI/2 : Math.PI/2);
+            } else if(direction > 0) {
+                ctx.scale(-1, 1);
+            }
+            
+            ctx.fillStyle = color;
+            
+            ctx.beginPath();
+            ctx.ellipse(0, 0, radius * 1.2, radius * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(radius * 1.2, 0);
+            ctx.lineTo(radius * 1.8, -radius * 0.6);
+            ctx.lineTo(radius * 1.8, radius * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-radius * 0.3, -radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        function drawLevelCircle() {
+            let centerX = 400;
+            let centerY = 750;
+            let radius = 30;
+            
+            let progress = (player.score % 50) / 50;
+            
+            ctx.fillStyle = '#2C3E50';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            if(progress > 0) {
+                ctx.fillStyle = '#4A90E2';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, -Math.PI/2, -Math.PI/2 + (progress * Math.PI * 2));
+                ctx.lineTo(centerX, centerY);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = '#FFF';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(player.level.toString(), centerX, centerY + 8);
+        }
+        
+        function drawShark(x, y, size, targetX, targetY) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            let angle = Math.atan2(targetY - y, targetX - x);
+            ctx.rotate(angle);
+            
+            ctx.fillStyle = '#708090';
+            
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size * 1.5, size * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(-size * 1.5, 0);
+            ctx.lineTo(-size * 2.2, -size * 0.8);
+            ctx.lineTo(-size * 2.2, size * 0.8);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.6);
+            ctx.lineTo(size * 0.5, -size * 1.0);
+            ctx.lineTo(size * 0.3, -size * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(size * 0.5, -size * 0.15, size * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#FFF';
+            for(let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(size * 0.8 + i * size * 0.15, size * 0.2);
+                ctx.lineTo(size * 0.7 + i * size * 0.15, size * 0.5);
+                ctx.lineTo(size * 0.9 + i * size * 0.15, size * 0.2);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        
+        function createParticle(x, y) {
+            for(let i = 0; i < 5; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    life: 30,
+                    maxLife: 30
+                });
+            }
+        }
+        
+        function drawBackground() {
+            let gradient = ctx.createLinearGradient(0, 0, 0, 800);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.5, '#4682B4');
+            gradient.addColorStop(1, '#191970');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 800, 800);
+        }
+        
+        function checkCollision(obj1, obj2) {
+            let dx = obj1.x - obj2.x;
+            let dy = obj1.y - obj2.y;
+            return Math.sqrt(dx*dx + dy*dy) < (obj1.radius + obj2.radius);
+        }
+        
+        function update() {
+            if(gameState !== 'playing' || isPaused) return;
+            
+            let moveX = 0, moveY = 0;
+            if(keys['ArrowUp'] || keys['w'] || keys['W']) { player.y -= player.speed; moveY = -1; }
+            if(keys['ArrowDown'] || keys['s'] || keys['S']) { player.y += player.speed; moveY = 1; }
+            if(keys['ArrowLeft'] || keys['a'] || keys['A']) { player.x -= player.speed; moveX = -1; }
+            if(keys['ArrowRight'] || keys['d'] || keys['D']) { player.x += player.speed; moveX = 1; }
+            
+            if(moveX !== 0 || moveY !== 0) {
+                player.lastMoveX = moveX;
+                player.lastMoveY = moveY;
+            }
+            
+            player.x = Math.max(player.radius, Math.min(800-player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(800-player.radius, player.y));
+            
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                let enemy = enemies[i];
+                enemy.x += enemy.directionX * enemy.speed;
+                enemy.y += enemy.directionY * enemy.speed;
+                enemy.life--;
+                
+                if(enemy.life <= 0 || enemy.x < -60 || enemy.x > 860 || enemy.y < -60 || enemy.y > 860) {
+                    enemies.splice(i, 1);
+                    continue;
+                }
+                
+                if(checkCollision(player, enemy) && !player.isInvincible) {
+                    gameState = 'gameOver';
+                    playSound(150, 1.0, 'sawtooth');
+                    player.combo = 0;
+                }
+            }
+            
+            for(let i = sharks.length - 1; i >= 0; i--) {
+                let shark = sharks[i];
+                let dx = player.x - shark.x;
+                let dy = player.y - shark.y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+                
+                shark.life--;
+                
+                if(shark.life <= 0 || shark.x < -80 || shark.x > 880 || shark.y < -80 || shark.y > 880) {
+                    sharks.splice(i, 1);
+                    continue;
+                }
+                
+                if(distance > 0) {
+                    shark.x += (dx / distance) * shark.speed;
+                    shark.y += (dy / distance) * shark.speed;
+                }
+                
+                if(distance < (player.radius + shark.size) && !player.isInvincible) {
+                    gameState = 'gameOver';
+                    playSound(150, 1.0, 'sawtooth');
+                    player.combo = 0;
+                }
+            }
+            
+            for(let i=foods.length-1; i>=0; i--) {
+                let food = foods[i];
+                food.x += food.speedX;
+                food.y += food.speedY;
+                food.floatY += food.floatSpeed;
+                food.y += Math.sin(food.floatY) * food.floatAmplitude * 0.1;
+                
+                if(food.x < -30 || food.x > 830 || food.y < -30 || food.y > 830) {
+                    foods.splice(i, 1);
+                    continue;
+                }
+                
+                if(checkCollision(player, food)) {
+                    createParticle(food.x, food.y);
+                    foods.splice(i, 1);
+                    player.radius++;
+                    player.score += 10;
+                    player.foodEaten++;
+                    player.combo++;
+                    
+                    playSound(800 + player.combo * 50, 0.1);
+                    
+                    if(player.combo >= 5) {
+                        player.score += 25;
+                        for(let j = 0; j < 3; j++) {
+                            setTimeout(() => playSound(1000 + j * 200, 0.1), j * 100);
+                        }
+                        player.combo = 0;
+                    }
+                    
+                    if(player.foodEaten >= 5 && player.level < 10) {
+                        player.level++;
+                        player.foodEaten = 0;
+                        player.radius += 3;
+                        levelUpFlash = 30;
+                        playSound(1200, 0.3, 'triangle');
+                        
+                        if(player.level >= 8) {
+                            warningTime = 120;
+                        }
+                        
+                        if(player.level >= 10) {
+                            gameState = 'victory';
+                        }
+                    }
+                }
+            }
+            
+            for(let i=powerUps.length-1; i>=0; i--) {
+                let powerUp = powerUps[i];
+                powerUp.x += powerUp.speedX;
+                powerUp.y += powerUp.speedY;
+                powerUp.floatY += powerUp.floatSpeed;
+                powerUp.y += Math.sin(powerUp.floatY) * powerUp.floatAmplitude * 0.1;
+                
+                if(powerUp.x < -30 || powerUp.x > 830 || powerUp.y < -30 || powerUp.y > 830) {
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+                
+                if(checkCollision(player, powerUp)) {
+                    powerUps.splice(i, 1);
+                    player.isInvincible = true;
+                    player.invincibleTime = 180;
+                    player.score += 20;
+                    playSound(600, 0.4, 'sawtooth');
+                }
+            }
+            
+            for(let i=bonusFish.length-1; i>=0; i--) {
+                let bonus = bonusFish[i];
+                bonus.x += bonus.speedX;
+                bonus.y += bonus.speedY;
+                bonus.floatY += bonus.floatSpeed;
+                bonus.y += Math.sin(bonus.floatY) * bonus.floatAmplitude * 0.1;
+                
+                if(bonus.x < -30 || bonus.x > 830 || bonus.y < -30 || bonus.y > 830) {
+                    bonusFish.splice(i, 1);
+                    continue;
+                }
+                
+                if(checkCollision(player, bonus)) {
+                    createParticle(bonus.x, bonus.y);
+                    bonusFish.splice(i, 1);
+                    player.radius += 5;
+                    player.score += 50;
+                    playSound(400, 0.5, 'square');
+                }
+            }
+            
+            gameTime++;
+            foodSpawnTimer++;
+            enemySpawnTimer++;
+            
+            let foodSpawnInterval = Math.max(90 - player.level * 10, 30);
+            if(foodSpawnTimer >= foodSpawnInterval) {
+                spawnFood();
+                if(gameTime % 200 === 0) spawnPowerUp();
+                foodSpawnTimer = 0;
+            }
+            
+            let enemySpawnInterval = Math.max(200 - player.level * 15, 80);
+            if(enemySpawnTimer >= enemySpawnInterval) {
+                spawnEnemy();
+                enemySpawnTimer = 0;
+            }
+            
+            sharkSpawnTimer++;
+            let requiredSharks = 0;
+            if(player.level === 8) requiredSharks = 1;
+            else if(player.level === 9) requiredSharks = 2;
+            else if(player.level >= 10) requiredSharks = 3;
+            
+            if(sharks.length < requiredSharks && sharkSpawnTimer >= 300) {
+                spawnShark();
+                sharkSpawnTimer = 0;
+            }
+            
+            for(let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if(p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            if(warningTime > 0) warningTime--;
+            if(levelUpFlash > 0) levelUpFlash--;
+            
+            if(player.invincibleTime > 0) {
+                player.invincibleTime--;
+                if(player.invincibleTime <= 0) {
+                    player.isInvincible = false;
+                }
+            }
+            
+            document.getElementById('score').textContent = player.score;
+            document.getElementById('size').textContent = player.radius;
+            document.getElementById('level').textContent = player.level;
+        }
+        
+        function draw() {
+            drawBackground();
+            
+            if(levelUpFlash > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${levelUpFlash / 30 * 0.3})`;
+                ctx.fillRect(0, 0, 800, 800);
+            }
+            
+            if(gameState === 'playing') {
+                drawCua(player.x, player.y, player.radius, player.lastMoveX, player.lastMoveY);
+                
+                foods.forEach(food => {
+                    let direction = food.speedX < 0 ? -1 : (food.speedX > 0 ? 1 : (food.speedY < 0 ? 90 : -90));
+                    drawFish(food.x, food.y, food.radius, '#FF6B6B', direction);
+                });
+                
+                particles.forEach(p => {
+                    let alpha = p.life / p.maxLife;
+                    ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(gameTime * 0.1);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -3);
+                    ctx.lineTo(-2, 1);
+                    ctx.lineTo(2, 1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                });
+                
+                ctx.fillStyle = '#2C3E50';
+                enemies.forEach(enemy => {
+                    ctx.beginPath();
+                    ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                
+                ctx.fillStyle = '#FF69B4';
+                powerUps.forEach(powerUp => {
+                    ctx.beginPath();
+                    ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                bonusFish.forEach(bonus => {
+                    let direction = bonus.speedX < 0 ? -1 : (bonus.speedX > 0 ? 1 : (bonus.speedY < 0 ? 90 : -90));
+                    drawFish(bonus.x, bonus.y, bonus.radius, '#FFD700', direction);
+                });
+                
+                sharks.forEach(shark => {
+                    drawShark(shark.x, shark.y, shark.size, player.x, player.y);
+                });
+                
+                if(warningTime > 0) {
+                    ctx.fillStyle = '#FF4500';
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('레벨 8! 상어 출현!', 400, 80);
+                }
+                
+                if(player.isInvincible) {
+                    ctx.fillStyle = '#FF69B4';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('무적: ' + Math.ceil(player.invincibleTime/60) + '초', 20, 30);
+                }
+                
+                drawLevelCircle();
+                
+                if(isPaused) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(0, 0, 800, 800);
+                    ctx.fillStyle = '#FFF';
+                    ctx.font = '48px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('PAUSED', 400, 400);
+                    ctx.font = '20px Arial';
+                    ctx.fillText('Press ESC to Resume', 400, 450);
+                }
+            } else if(gameState === 'gameOver') {
+                drawCua(player.x, player.y, player.radius, player.lastMoveX, player.lastMoveY, true);
+                
+                ctx.fillStyle = '#2C3E50';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over', 400, 360);
+                
+                ctx.font = '16px Arial';
+                ctx.fillText('Score: ' + player.score, 400, 420);
+                ctx.fillText('Click or Press SPACE to Restart', 400, 480);
+            } else if(gameState === 'victory') {
+                ctx.fillStyle = '#4A90E2';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Victory!', 400, 360);
+                
+                ctx.font = '16px Arial';
+                ctx.fillText('Level 10 Reached!', 400, 420);
+                ctx.fillText('Score: ' + player.score, 400, 460);
+                ctx.fillText('Click or Press SPACE to Restart', 400, 500);
+            }
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function restartGame() {
+            player = {x:400, y:400, radius:15, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0};
+            foods = [];
+            enemies = [];
+            sharks = [];
+            powerUps = [];
+            bonusFish = [];
+            particles = [];
+            foodSpawnTimer = 0;
+            enemySpawnTimer = 0;
+            sharkSpawnTimer = 0;
+            gameTime = 0;
+            levelUpFlash = 0;
+            isPaused = false;
+            
+            for(let i=0; i<5; i++) {
+                spawnFood();
+            }
+            shark = null;
+            warningTime = 0;
+            gameState = 'playing';
+            createFood();
+            createEnemies();
+        }
+        
+        document.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if((gameState === 'gameOver' || gameState === 'victory') && e.key === ' ') {
+                restartGame();
+            }
+            if(e.key === 'Escape') {
+                if(gameState === 'playing') {
+                    isPaused = !isPaused;
+                }
+            }
+        });
+        document.addEventListener('keyup', e => keys[e.key] = false);
+        canvas.addEventListener('click', () => {
+            if(gameState === 'gameOver' || gameState === 'victory') restartGame();
+        });
+        
+        initAudio();
+        
+        for(let i=0; i<5; i++) {
+            spawnFood();
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
