@@ -336,6 +336,7 @@
         let touchStartY = 0;
         let isTouching = false;
         let touchCount = 0;
+        let firstTouchId = null; // 첫 번째 터치 추적용
         let fishes = [];
         let sharks = [];
         let powerUps = [];
@@ -2005,14 +2006,19 @@
         if(mobileControl) {
             mobileControl.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                touchCount = e.touches.length;
 
                 const rect = mobileControl.getBoundingClientRect();
-                const touch = e.touches[0];
-                touchStartX = touch.clientX - rect.left;
-                touchStartY = touch.clientY - rect.top;
 
-                isTouching = true;
+                // 첫 번째 터치일 때
+                if(e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    firstTouchId = touch.identifier;
+                    touchStartX = touch.clientX - rect.left;
+                    touchStartY = touch.clientY - rect.top;
+                    isTouching = true;
+                }
+
+                touchCount = e.touches.length;
 
                 // 게임 시작 (인트로 화면일 때)
                 if(gameState === 'intro') {
@@ -2028,43 +2034,59 @@
 
                 if(gameState !== 'playing' || isPaused) return;
 
-                // 터치 개수 업데이트
-                const newTouchCount = e.touches.length;
+                touchCount = e.touches.length;
 
-                const rect = mobileControl.getBoundingClientRect();
-                const touch = e.touches[0];
-                const currentX = touch.clientX - rect.left;
-                const currentY = touch.clientY - rect.top;
-
-                // 손가락 개수가 변했을 때 (1->2 또는 2->1)
-                if(newTouchCount !== touchCount) {
-                    // 현재 위치를 새로운 시작점으로 설정
-                    touchStartX = currentX;
-                    touchStartY = currentY;
-                    touchCount = newTouchCount;
-                    return; // 이번 프레임은 위치 업데이트 건너뛰기
+                // 첫 번째 손가락 찾기
+                let firstTouch = null;
+                for(let i = 0; i < e.touches.length; i++) {
+                    if(e.touches[i].identifier === firstTouchId) {
+                        firstTouch = e.touches[i];
+                        break;
+                    }
                 }
 
-                // 터치 시작 지점 기준으로 상대적 이동
-                const deltaX = (currentX - touchStartX) * 3;
-                const deltaY = (currentY - touchStartY) * 3;
+                // 첫 번째 손가락이 있으면 그것만 사용
+                if(firstTouch) {
+                    const rect = mobileControl.getBoundingClientRect();
+                    const currentX = firstTouch.clientX - rect.left;
+                    const currentY = firstTouch.clientY - rect.top;
 
-                mouse.x = player.x + deltaX;
-                mouse.y = player.y + deltaY;
+                    // 터치 시작 지점 기준으로 상대적 이동
+                    const deltaX = (currentX - touchStartX) * 3;
+                    const deltaY = (currentY - touchStartY) * 3;
+
+                    mouse.x = player.x + deltaX;
+                    mouse.y = player.y + deltaY;
+                }
             });
 
             mobileControl.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 touchCount = e.touches.length;
 
-                // 남은 터치가 있으면 새로운 시작점 설정
-                if(touchCount > 0) {
-                    const rect = mobileControl.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    touchStartX = touch.clientX - rect.left;
-                    touchStartY = touch.clientY - rect.top;
-                } else {
-                    isTouching = false;
+                // 첫 번째 손가락이 떼어졌는지 확인
+                let firstTouchStillExists = false;
+                for(let i = 0; i < e.touches.length; i++) {
+                    if(e.touches[i].identifier === firstTouchId) {
+                        firstTouchStillExists = true;
+                        break;
+                    }
+                }
+
+                // 첫 번째 손가락이 떼어졌으면
+                if(!firstTouchStillExists) {
+                    if(e.touches.length > 0) {
+                        // 남은 터치를 새로운 첫 번째로 설정
+                        const rect = mobileControl.getBoundingClientRect();
+                        const newFirstTouch = e.touches[0];
+                        firstTouchId = newFirstTouch.identifier;
+                        touchStartX = newFirstTouch.clientX - rect.left;
+                        touchStartY = newFirstTouch.clientY - rect.top;
+                    } else {
+                        // 모든 터치가 끝남
+                        isTouching = false;
+                        firstTouchId = null;
+                    }
                 }
             });
 
@@ -2072,6 +2094,7 @@
                 e.preventDefault();
                 isTouching = false;
                 touchCount = 0;
+                firstTouchId = null;
             });
         }
 
