@@ -488,12 +488,12 @@
         }
 
         function updateBGM() {
-            if(isMuted || isFading) return;
+            if(isMuted) return;
 
             let targetBGM = getBGMForLevel(player.level);
 
             // 같은 음악이면 변경하지 않음
-            if(currentBGM === targetBGM) return;
+            if(currentBGM === targetBGM && currentBGM && !currentBGM.paused) return;
 
             isFading = true;
 
@@ -1936,9 +1936,17 @@
             // 오디오 활성화 (모바일)
             unlockAudio();
 
-            // BGM 시작
+            // BGM 시작 - 강제로 다시 시작
             if(!isMuted) {
-                setTimeout(() => startBGM(), 100);
+                // 이전 상태 완전히 초기화
+                isFading = false;
+                currentBGM = null;
+                currentBGMLevel = 0;
+
+                // 즉시 BGM 시작
+                setTimeout(() => {
+                    startBGM();
+                }, 200);
             }
         }
 
