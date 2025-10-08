@@ -378,8 +378,16 @@
             Object.values(bgmAudios).forEach(audio => {
                 audio.loop = true;
                 audio.volume = 0;
+                audio.preload = 'auto';
                 audio.load();
             });
+        }
+
+        // 모바일에서 오디오 활성화 (터치로 시작)
+        function unlockAudio() {
+            if(audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
         }
 
         function getBGMForLevel(level) {
@@ -1823,9 +1831,12 @@
             warningTime = 0;
             gameState = 'playing';
 
+            // 오디오 활성화 (모바일)
+            unlockAudio();
+
             // BGM 시작
             if(!isMuted) {
-                startBGM();
+                setTimeout(() => startBGM(), 100);
             }
         }
 
@@ -2015,24 +2026,24 @@
             mobileControl.addEventListener('touchmove', (e) => {
                 e.preventDefault();
 
+                if(gameState !== 'playing' || isPaused) return;
+
                 // 터치 개수 업데이트
                 const newTouchCount = e.touches.length;
 
-                if(gameState !== 'playing' || isPaused) return;
-
                 const rect = mobileControl.getBoundingClientRect();
                 const touch = e.touches[0];
-
-                // 두 손가락으로 전환될 때 터치 시작점 업데이트
-                if(newTouchCount > touchCount) {
-                    touchStartX = touch.clientX - rect.left;
-                    touchStartY = touch.clientY - rect.top;
-                }
-
-                touchCount = newTouchCount;
-
                 const currentX = touch.clientX - rect.left;
                 const currentY = touch.clientY - rect.top;
+
+                // 손가락 개수가 변했을 때 (1->2 또는 2->1)
+                if(newTouchCount !== touchCount) {
+                    // 현재 위치를 새로운 시작점으로 설정
+                    touchStartX = currentX;
+                    touchStartY = currentY;
+                    touchCount = newTouchCount;
+                    return; // 이번 프레임은 위치 업데이트 건너뛰기
+                }
 
                 // 터치 시작 지점 기준으로 상대적 이동
                 const deltaX = (currentX - touchStartX) * 3;
