@@ -133,6 +133,13 @@
             .control-area {
                 width: 100%;
                 height: 200px;
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+
+            .movement-pad {
+                flex: 1;
                 background: rgba(74, 144, 226, 0.2);
                 border: 2px solid rgba(74, 144, 226, 0.5);
                 border-radius: 10px;
@@ -142,8 +149,33 @@
                 font-size: 16px;
                 color: #fff;
                 text-align: center;
-                margin-bottom: 10px;
                 touch-action: none;
+                position: relative;
+            }
+
+            .dash-button {
+                width: 120px;
+                background: rgba(255, 215, 0, 0.3);
+                border: 2px solid rgba(255, 215, 0, 0.6);
+                border-radius: 10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                font-size: 32px;
+                color: #FFD700;
+                text-align: center;
+                touch-action: none;
+            }
+
+            .dash-button.active {
+                background: rgba(255, 215, 0, 0.6);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            }
+
+            .dash-button-label {
+                font-size: 12px;
+                margin-top: 5px;
             }
 
             .mobile-instructions {
@@ -309,10 +341,16 @@
 
     <!-- 모바일 전용 컨트롤 영역 -->
     <div class="mobile-controls">
-        <div class="control-area" id="mobileControl">
-            <div>
-                👆 이 영역을 터치해서 이동<br>
-                ✌️ 두 손가락으로 대시
+        <div class="control-area">
+            <div class="movement-pad" id="movementPad">
+                <div>
+                    👆 이동<br>
+                    (조이스틱)
+                </div>
+            </div>
+            <div class="dash-button" id="dashButton">
+                ⚡
+                <div class="dash-button-label">대시</div>
             </div>
         </div>
         <div class="mobile-instructions">
@@ -335,8 +373,8 @@
         let touchStartX = 0;
         let touchStartY = 0;
         let isTouching = false;
+        let isDashPressed = false; // 대시 버튼 눌림 상태
         let touchCount = 0;
-        let firstTouchId = null; // 첫 번째 터치 추적용
         let fishes = [];
         let sharks = [];
         let powerUps = [];
@@ -762,7 +800,7 @@
             }
 
             // 스테미나 부족으로 대시 못할 때 점멸 효과
-            if((keys[' '] || mousePressed || touchCount >= 2) && player.stamina <= 5) {
+            if((keys[' '] || mousePressed || isDashPressed) && player.stamina <= 5) {
                 let blinkAlpha = Math.sin(gameTime * 0.3) * 0.5 + 0.5; // 0~1 사이로 점멸
                 ctx.save();
                 ctx.globalAlpha = blinkAlpha;
@@ -1270,7 +1308,7 @@
             let inputX = 0, inputY = 0;
             let keyboardMovement = false;
 
-            player.isDashing = (keys[' '] || mousePressed || touchCount >= 2) && player.stamina > 5;
+            player.isDashing = (keys[' '] || mousePressed || isDashPressed) && player.stamina > 5;
             let baseSpeed = player.isSlowed ? player.speed * 0.5 : player.speed; // 성게 디버프 적용
             let maxSpeed = player.isDashing ? baseSpeed * 2.5 : baseSpeed;
 
@@ -1892,7 +1930,13 @@
         }
 
         function restartGame() {
-            startGame();
+            // BGM 완전히 정지
+            stopBGM();
+
+            // 약간의 딜레이 후 게임 시작
+            setTimeout(() => {
+                startGame();
+            }, 100);
         }
         
         document.addEventListener('keydown', e => {
@@ -2017,7 +2061,8 @@
         });
 
         // 모바일 컨트롤 영역
-        const mobileControl = document.getElementById('mobileControl');
+        const movementPad = document.getElementById('movementPad');
+        const dashButton = document.getElementById('dashButton');
         const pauseButton = document.getElementById('pauseButton');
 
         // 일시정지 버튼
@@ -2052,23 +2097,16 @@
             });
         }
 
-        // 모바일 컨트롤 영역 터치 이벤트
-        if(mobileControl) {
-            mobileControl.addEventListener('touchstart', (e) => {
+        // 이동 패드
+        if(movementPad) {
+            movementPad.addEventListener('touchstart', (e) => {
                 e.preventDefault();
 
-                const rect = mobileControl.getBoundingClientRect();
-
-                // 첫 번째 터치일 때
-                if(e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    firstTouchId = touch.identifier;
-                    touchStartX = touch.clientX - rect.left;
-                    touchStartY = touch.clientY - rect.top;
-                    isTouching = true;
-                }
-
-                touchCount = e.touches.length;
+                const rect = movementPad.getBoundingClientRect();
+                const touch = e.touches[0];
+                touchStartX = touch.clientX - rect.left;
+                touchStartY = touch.clientY - rect.top;
+                isTouching = true;
 
                 // 게임 시작 (인트로 화면일 때)
                 if(gameState === 'intro') {
@@ -2079,72 +2117,61 @@
                 }
             });
 
-            mobileControl.addEventListener('touchmove', (e) => {
+            movementPad.addEventListener('touchmove', (e) => {
                 e.preventDefault();
 
                 if(gameState !== 'playing' || isPaused) return;
 
-                touchCount = e.touches.length;
+                const rect = movementPad.getBoundingClientRect();
+                const touch = e.touches[0];
+                const currentX = touch.clientX - rect.left;
+                const currentY = touch.clientY - rect.top;
 
-                // 첫 번째 손가락 찾기
-                let firstTouch = null;
-                for(let i = 0; i < e.touches.length; i++) {
-                    if(e.touches[i].identifier === firstTouchId) {
-                        firstTouch = e.touches[i];
-                        break;
-                    }
-                }
+                // 터치 시작 지점 기준으로 상대적 이동
+                const deltaX = (currentX - touchStartX) * 3;
+                const deltaY = (currentY - touchStartY) * 3;
 
-                // 첫 번째 손가락이 있으면 그것만 사용
-                if(firstTouch) {
-                    const rect = mobileControl.getBoundingClientRect();
-                    const currentX = firstTouch.clientX - rect.left;
-                    const currentY = firstTouch.clientY - rect.top;
-
-                    // 터치 시작 지점 기준으로 상대적 이동
-                    const deltaX = (currentX - touchStartX) * 3;
-                    const deltaY = (currentY - touchStartY) * 3;
-
-                    mouse.x = player.x + deltaX;
-                    mouse.y = player.y + deltaY;
-                }
+                mouse.x = player.x + deltaX;
+                mouse.y = player.y + deltaY;
             });
 
-            mobileControl.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                touchCount = e.touches.length;
-
-                // 첫 번째 손가락이 떼어졌는지 확인
-                let firstTouchStillExists = false;
-                for(let i = 0; i < e.touches.length; i++) {
-                    if(e.touches[i].identifier === firstTouchId) {
-                        firstTouchStillExists = true;
-                        break;
-                    }
-                }
-
-                // 첫 번째 손가락이 떼어졌으면
-                if(!firstTouchStillExists) {
-                    if(e.touches.length > 0) {
-                        // 남은 터치를 새로운 첫 번째로 설정
-                        const rect = mobileControl.getBoundingClientRect();
-                        const newFirstTouch = e.touches[0];
-                        firstTouchId = newFirstTouch.identifier;
-                        touchStartX = newFirstTouch.clientX - rect.left;
-                        touchStartY = newFirstTouch.clientY - rect.top;
-                    } else {
-                        // 모든 터치가 끝남
-                        isTouching = false;
-                        firstTouchId = null;
-                    }
-                }
-            });
-
-            mobileControl.addEventListener('touchcancel', (e) => {
+            movementPad.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 isTouching = false;
-                touchCount = 0;
-                firstTouchId = null;
+            });
+
+            movementPad.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                isTouching = false;
+            });
+        }
+
+        // 대시 버튼
+        if(dashButton) {
+            dashButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isDashPressed = true;
+                dashButton.classList.add('active');
+
+                // 게임 시작 (인트로 화면일 때)
+                if(gameState === 'intro') {
+                    startGame();
+                    usingKeyboard = false;
+                } else if(gameState === 'gameOver' || gameState === 'victory') {
+                    restartGame();
+                }
+            });
+
+            dashButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                isDashPressed = false;
+                dashButton.classList.remove('active');
+            });
+
+            dashButton.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                isDashPressed = false;
+                dashButton.classList.remove('active');
             });
         }
 
