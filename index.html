@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>아기고래 쿠아</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -20,8 +21,9 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow-x: hidden;
+            overflow: hidden;
             position: relative;
+            touch-action: none;
         }
 
         /* 물결 애니메이션 배경 */
@@ -47,6 +49,9 @@
             align-items: center;
             gap: 20px;
             padding: 20px;
+            width: 100%;
+            height: 100vh;
+            justify-content: center;
         }
 
         .game-title {
@@ -79,6 +84,30 @@
             flex-direction: column;
             gap: 40px;
             opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 32px;
+            }
+            .decoration-left, .decoration-right {
+                display: none;
+            }
+            #game {
+                width: 100vw !important;
+                height: 100vh !important;
+                border-radius: 0;
+            }
+            .canvas-container {
+                padding: 0;
+                border-radius: 0;
+                width: 100vw;
+                height: 100vh;
+            }
+            .game-container {
+                padding: 0;
+                gap: 0;
+            }
         }
 
         .seaweed {
@@ -208,6 +237,10 @@
         let player = {x:400, y:400, radius:8, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0, stamina:100, maxStamina:100, isDashing:false, velocityX:0, velocityY:0, isSlowed:false, slowTime:0};
         let mouse = {x:400, y:400};
         let usingKeyboard = false;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isTouching = false;
+        let touchCount = 0;
         let fishes = [];
         let sharks = [];
         let powerUps = [];
@@ -1083,7 +1116,7 @@
             let inputX = 0, inputY = 0;
             let keyboardMovement = false;
 
-            player.isDashing = (keys[' '] || mousePressed) && player.stamina > 5;
+            player.isDashing = (keys[' '] || mousePressed || touchCount >= 2) && player.stamina > 5;
             let baseSpeed = player.isSlowed ? player.speed * 0.5 : player.speed; // 성게 디버프 적용
             let maxSpeed = player.isDashing ? baseSpeed * 2.5 : baseSpeed;
 
@@ -1093,8 +1126,20 @@
             if(keys['ArrowLeft'] || keys['a'] || keys['A']) { inputX = -1; keyboardMovement = true; usingKeyboard = true; }
             if(keys['ArrowRight'] || keys['d'] || keys['D']) { inputX = 1; keyboardMovement = true; usingKeyboard = true; }
 
+            // 터치 드래그 입력 처리
+            if(!keyboardMovement && isTouching) {
+                let dx = mouse.x - touchStartX;
+                let dy = mouse.y - touchStartY;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if(distance > 5) {
+                    inputX = dx / distance;
+                    inputY = dy / distance;
+                    usingKeyboard = false;
+                }
+            }
             // 마우스 입력 처리
-            if(!keyboardMovement && !usingKeyboard) {
+            else if(!keyboardMovement && !usingKeyboard && !isTouching) {
                 let dx = mouse.x - player.x;
                 let dy = mouse.y - player.y;
                 let distance = Math.sqrt(dx * dx + dy * dy);
@@ -1766,7 +1811,100 @@
                 }
             }
         });
-        
+
+        // 터치 이벤트 추가
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchCount = e.touches.length;
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+
+            // 게임 화면 크기에 맞게 좌표 변환 (모바일에서 캔버스가 확대될 수 있음)
+            const scaleX = 800 / rect.width;
+            const scaleY = 800 / rect.height;
+            touchStartX = touchX * scaleX;
+            touchStartY = touchY * scaleY;
+            mouse.x = touchStartX;
+            mouse.y = touchStartY;
+
+            isTouching = true;
+
+            // 음소거 버튼 클릭 감지
+            const muteButtonDistance = Math.sqrt(Math.pow(touchX * scaleX - 760, 2) + Math.pow(touchY * scaleY - 30, 2));
+            if(muteButtonDistance <= 25 && (gameState === 'playing' || gameState === 'intro')) {
+                toggleMute();
+                return;
+            }
+
+            if(gameState === 'intro') {
+                if(touchX * scaleX >= 720 && touchX * scaleX <= 780 && touchY * scaleY >= 20 && touchY * scaleY <= 60) {
+                    toggleMute();
+                } else {
+                    startGame();
+                    usingKeyboard = false;
+                }
+            } else if(gameState === 'gameOver' || gameState === 'victory') {
+                restartGame();
+            } else if(isPaused) {
+                if(touchX * scaleX >= 220 && touchX * scaleX <= 340 && touchY * scaleY >= 440 && touchY * scaleY <= 480) {
+                    restartGame();
+                } else if(touchX * scaleX >= 360 && touchX * scaleX <= 480 && touchY * scaleY >= 440 && touchY * scaleY <= 480) {
+                    gameState = 'intro';
+                    isPaused = false;
+                    stopBGM();
+                } else if(touchX * scaleX >= 500 && touchX * scaleX <= 580 && touchY * scaleY >= 440 && touchY * scaleY <= 480) {
+                    toggleMute();
+                } else {
+                    isPaused = false;
+                    usingKeyboard = false;
+                    resumeBGM();
+                }
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            touchCount = e.touches.length;
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const scaleX = 800 / rect.width;
+            const scaleY = 800 / rect.height;
+            mouse.x = (touch.clientX - rect.left) * scaleX;
+            mouse.y = (touch.clientY - rect.top) * scaleY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchCount = e.touches.length;
+            if(touchCount === 0) {
+                isTouching = false;
+            }
+        });
+
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            isTouching = false;
+            touchCount = 0;
+        });
+
+        // 모바일에서 캔버스 크기 조정
+        function resizeCanvas() {
+            if(window.innerWidth <= 768) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            } else {
+                canvas.width = 800;
+                canvas.height = 800;
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
         initAudio();
         gameLoop();
     </script>
