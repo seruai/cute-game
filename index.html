@@ -735,7 +735,48 @@
             ctx.save();
             ctx.translate(x, y);
 
-            // 무적 보호막 그리기 (가장 먼저)
+            // 대시 중일 때 빛나는 효과
+            if(player.isDashing && player.stamina > 0) {
+                ctx.save();
+                let dashGlow = radius * 2.2;
+                let glowGradient = ctx.createRadialGradient(0, 0, radius, 0, 0, dashGlow);
+                glowGradient.addColorStop(0, 'rgba(255, 223, 0, 0.6)');
+                glowGradient.addColorStop(0.5, 'rgba(255, 165, 0, 0.4)');
+                glowGradient.addColorStop(1, 'rgba(255, 140, 0, 0)');
+
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, dashGlow, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 빛나는 외곽선
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#FFD700';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius * 1.5, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+
+            // 스테미나 부족으로 대시 못할 때 점멸 효과
+            if((keys[' '] || mousePressed || touchCount >= 2) && player.stamina <= 5) {
+                let blinkAlpha = Math.sin(gameTime * 0.3) * 0.5 + 0.5; // 0~1 사이로 점멸
+                ctx.save();
+                ctx.globalAlpha = blinkAlpha;
+                ctx.strokeStyle = '#FF4444';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(0, 0, radius * 1.3, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
+            // 무적 보호막 그리기
             if(player.isInvincible) {
                 ctx.save();
                 let shieldRadius = radius * 1.8;
