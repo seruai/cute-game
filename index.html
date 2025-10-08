@@ -3,40 +3,369 @@
 <head>
     <meta charset="UTF-8">
     <title>아기고래 쿠아</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Arial', sans-serif;
+            background: linear-gradient(180deg, #001f3f 0%, #003d73 50%, #006ba6 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 물결 애니메이션 배경 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .game-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow:
+                0 0 10px rgba(74, 144, 226, 0.8),
+                0 0 20px rgba(74, 144, 226, 0.6),
+                2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+            animation: titleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes titleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .game-wrapper {
+            position: relative;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        /* 왼쪽 장식 */
+        .decoration-left, .decoration-right {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            opacity: 0.7;
+        }
+
+        .seaweed {
+            position: relative;
+            width: 60px;
+        }
+
+        .seaweed-stem {
+            width: 8px;
+            height: 150px;
+            background: linear-gradient(to bottom, #2d5016 0%, #4a7c29 50%, #2d5016 100%);
+            border-radius: 10px;
+            margin: 0 auto;
+            animation: seaweedWave 3s ease-in-out infinite;
+            transform-origin: bottom;
+        }
+
+        @keyframes seaweedWave {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .seaweed:nth-child(1) .seaweed-stem { animation-delay: 0s; height: 120px; }
+        .seaweed:nth-child(2) .seaweed-stem { animation-delay: 0.5s; height: 160px; }
+        .seaweed:nth-child(3) .seaweed-stem { animation-delay: 1s; height: 140px; }
+
+        .decoration-right .seaweed:nth-child(1) .seaweed-stem { animation-delay: 0.3s; height: 130px; }
+        .decoration-right .seaweed:nth-child(2) .seaweed-stem { animation-delay: 0.8s; height: 150px; }
+        .decoration-right .seaweed:nth-child(3) .seaweed-stem { animation-delay: 1.3s; height: 170px; }
+
+        /* 게임 캔버스 영역 */
+        .canvas-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow:
+                0 0 30px rgba(0, 0, 0, 0.3),
+                inset 0 0 50px rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        #game {
+            display: block;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            cursor: default;
+        }
+
+        /* 물방울 장식 */
+        .bubble {
+            position: fixed;
+            bottom: -50px;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: bubbleRise 10s infinite;
+            z-index: 0;
+        }
+
+        @keyframes bubbleRise {
+            0% {
+                bottom: -50px;
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                bottom: 110vh;
+                opacity: 0;
+            }
+        }
+
+        .bubble:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 8s; }
+        .bubble:nth-child(2) { left: 25%; animation-delay: 2s; animation-duration: 10s; width: 15px; height: 15px; }
+        .bubble:nth-child(3) { left: 40%; animation-delay: 4s; animation-duration: 12s; width: 25px; height: 25px; }
+        .bubble:nth-child(4) { left: 55%; animation-delay: 1s; animation-duration: 9s; }
+        .bubble:nth-child(5) { left: 70%; animation-delay: 3s; animation-duration: 11s; width: 18px; height: 18px; }
+        .bubble:nth-child(6) { left: 85%; animation-delay: 5s; animation-duration: 13s; }
+    </style>
 </head>
 <body>
-    <canvas id="game" width="800" height="800" style="border:1px solid #000"></canvas>
-    <div>점수: <span id="score">0</span> | 크기: <span id="size">15</span>px | 레벨: <span id="level">1</span>/10 | <button id="muteBtn" onclick="toggleMute()">🔊</button></div>
+    <!-- 물방울 효과 -->
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+
+    <div class="game-container">
+        <h1 class="game-title">🐋 아기고래 쿠아 🐋</h1>
+
+        <div class="game-wrapper">
+            <!-- 왼쪽 미역 장식 -->
+            <div class="decoration-left">
+                <div class="seaweed"><div class="seaweed-stem"></div></div>
+                <div class="seaweed"><div class="seaweed-stem"></div></div>
+                <div class="seaweed"><div class="seaweed-stem"></div></div>
+            </div>
+
+            <!-- 게임 캔버스 -->
+            <div class="canvas-container">
+                <canvas id="game" width="800" height="800"></canvas>
+            </div>
+
+            <!-- 오른쪽 미역 장식 -->
+            <div class="decoration-right">
+                <div class="seaweed"><div class="seaweed-stem"></div></div>
+                <div class="seaweed"><div class="seaweed-stem"></div></div>
+                <div class="seaweed"><div class="seaweed-stem"></div></div>
+            </div>
+        </div>
+
+    </div>
+
     <script>
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
         
-        let player = {x:400, y:400, radius:15, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0};
-        let foods = [];
-        let enemies = [];
+        let player = {x:400, y:400, radius:8, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0, stamina:100, maxStamina:100, isDashing:false, velocityX:0, velocityY:0, isSlowed:false, slowTime:0};
+        let mouse = {x:400, y:400};
+        let usingKeyboard = false;
+        let fishes = [];
         let sharks = [];
         let powerUps = [];
         let bonusFish = [];
         let particles = [];
+        let urchins = []; // 성게
         let keys = {};
-        let gameState = 'playing';
+        let mousePressed = false;
+        let gameState = 'intro';
         let warningTime = 0;
-        let foodSpawnTimer = 0;
-        let enemySpawnTimer = 0;
+        let fishSpawnTimer = 0;
         let sharkSpawnTimer = 0;
         let gameTime = 0;
+        let gameStartTime = 0;
+        let gameClearTime = 0;
         let levelUpFlash = 0;
         let audioContext;
         let isMuted = false;
         let isPaused = false;
-        
+
+        // BGM 시스템
+        let bgmAudios = {
+            1: new Audio('music/1.mp3'),
+            2: new Audio('music/2.mp3'),
+            3: new Audio('music/3.mp3'),
+            4: new Audio('music/4.mp4')
+        };
+        let currentBGM = null;
+        let currentBGMLevel = 0;
+        let isFading = false;
+
         function initAudio() {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             } catch(e) {
                 console.log('Audio not supported');
             }
+
+            // 모든 BGM 사전 로드 및 루프 설정
+            Object.values(bgmAudios).forEach(audio => {
+                audio.loop = true;
+                audio.volume = 0;
+                audio.load();
+            });
         }
+
+        function getBGMForLevel(level) {
+            if(level >= 1 && level <= 2) return bgmAudios[1];
+            if(level >= 3 && level <= 5) return bgmAudios[2];
+            if(level >= 6 && level <= 7) return bgmAudios[3];
+            if(level >= 8 && level <= 10) return bgmAudios[4];
+            return null;
+        }
+
+        function startBGM() {
+            if(isMuted) return;
+            updateBGM();
+        }
+
+        function stopBGM() {
+            if(currentBGM) {
+                fadeOut(currentBGM, () => {
+                    currentBGM.pause();
+                    currentBGM.currentTime = 0;
+                });
+            }
+            currentBGM = null;
+            currentBGMLevel = 0;
+        }
+
+        function pauseBGM() {
+            if(currentBGM && !currentBGM.paused) {
+                currentBGM.pause();
+            }
+        }
+
+        function resumeBGM() {
+            if(currentBGM && currentBGM.paused && !isMuted) {
+                currentBGM.play().catch(e => console.log('BGM resume error:', e));
+            }
+        }
+
+        function updateBGM() {
+            if(isMuted || isFading) return;
+
+            let targetBGM = getBGMForLevel(player.level);
+
+            // 같은 음악이면 변경하지 않음
+            if(currentBGM === targetBGM) return;
+
+            isFading = true;
+
+            // 이전 BGM 페이드 아웃
+            if(currentBGM) {
+                fadeOut(currentBGM, () => {
+                    currentBGM.pause();
+                    currentBGM.currentTime = 0;
+
+                    // 새 BGM 페이드 인
+                    currentBGM = targetBGM;
+                    currentBGMLevel = player.level;
+                    if(currentBGM && !isMuted) {
+                        currentBGM.play().catch(e => console.log('BGM play error:', e));
+                        fadeIn(currentBGM, () => {
+                            isFading = false;
+                        });
+                    } else {
+                        isFading = false;
+                    }
+                });
+            } else {
+                // 처음 시작 시 바로 페이드 인
+                currentBGM = targetBGM;
+                currentBGMLevel = player.level;
+                if(currentBGM && !isMuted) {
+                    currentBGM.play().catch(e => console.log('BGM play error:', e));
+                    fadeIn(currentBGM, () => {
+                        isFading = false;
+                    });
+                } else {
+                    isFading = false;
+                }
+            }
+        }
+
+        function fadeIn(audio, callback) {
+            if(!audio) return;
+            audio.volume = 0;
+            let volume = 0;
+            let fadeInterval = setInterval(() => {
+                volume += 0.02;
+                if(volume >= 0.5) {
+                    volume = 0.5;
+                    audio.volume = volume;
+                    clearInterval(fadeInterval);
+                    if(callback) callback();
+                } else {
+                    audio.volume = volume;
+                }
+            }, 50);
+        }
+
+        function fadeOut(audio, callback) {
+            if(!audio) return;
+            let volume = audio.volume;
+            let fadeInterval = setInterval(() => {
+                volume -= 0.02;
+                if(volume <= 0) {
+                    volume = 0;
+                    audio.volume = volume;
+                    clearInterval(fadeInterval);
+                    if(callback) callback();
+                } else {
+                    audio.volume = volume;
+                }
+            }, 50);
+        }
+
         
         function playSound(frequency, duration, type = 'sine') {
             if(!audioContext || isMuted) return;
@@ -59,16 +388,42 @@
         
         function toggleMute() {
             isMuted = !isMuted;
-            document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+
+            if(isMuted) {
+                // 음소거 시 모든 BGM 정지
+                Object.values(bgmAudios).forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                });
+                currentBGM = null;
+            } else if(gameState === 'playing') {
+                // 음소거 해제 시 BGM 재개
+                startBGM();
+            }
         }
         
-        function spawnFood() {
-            let baseSpeed = 1.0 + (player.level - 1) * 0.05;
-            let speed = baseSpeed * (0.8 + Math.random() * 0.4);
-            
+        const fishStages = [
+            {stage: 1, radius: 5, color: '#FFD700', points: 10},    // 밝은 노란색
+            {stage: 2, radius: 12, color: '#FF8C00', points: 20},   // 주황색
+            {stage: 3, radius: 15, color: '#FF4500', points: 30},   // 오렌지레드
+            {stage: 4, radius: 18, color: '#C71585', points: 40},   // 미디엄 바이올렛 레드
+            {stage: 5, radius: 21, color: '#8B008B', points: 50},   // 진한 마젠타
+            {stage: 6, radius: 24, color: '#4B0082', points: 60},   // 인디고
+            {stage: 7, radius: 27, color: '#6B0041', points: 70},   // 다크 버건디
+            {stage: 8, radius: 30, color: '#8B0000', points: 80}    // 어두운 빨간색
+        ];
+
+        function getPlayerRadius() {
+            return 8 + (player.level - 1) * 4 + player.foodEaten;
+        }
+
+        function spawnFish() {
+            let baseSpeed = 0.6 + (player.level - 1) * 0.03;
+            let speed = baseSpeed * (0.6 + Math.random() * 0.3);
+
             let side = Math.floor(Math.random() * 4);
             let x, y, speedX, speedY;
-            
+
             switch(side) {
                 case 0:
                     x = 820;
@@ -85,43 +440,68 @@
                 case 2:
                     x = Math.random() * 700 + 50;
                     y = 820;
-                    speedX = 0;
+                    speedX = (Math.random() - 0.5) * speed * 0.8;
                     speedY = -speed;
                     break;
                 case 3:
                     x = Math.random() * 700 + 50;
                     y = -20;
-                    speedX = 0;
+                    speedX = (Math.random() - 0.5) * speed * 0.8;
                     speedY = speed;
                     break;
             }
-            
-            foods.push({
+
+            let maxStage;
+            if(player.level >= 8) {
+                maxStage = 8;
+            } else {
+                maxStage = Math.min(player.level + 1, 8);
+            }
+
+            // 적 물고기(다음 레벨) 등장 확률 증가
+            let stage;
+            if(player.level < 8 && Math.random() < 0.4) {
+                // 40% 확률로 적 물고기(다음 레벨) 등장
+                stage = player.level + 1;
+            } else {
+                // 나머지는 기존 로직
+                let availableStages = maxStage - (player.level < 8 ? 1 : 0);
+                stage = Math.floor(Math.random() * availableStages) + 1;
+                if(player.level < 8 && stage >= player.level + 1) {
+                    stage = Math.min(stage, player.level);
+                }
+            }
+            let fishData = fishStages[stage - 1];
+
+            fishes.push({
                 x: x,
                 y: y,
-                radius: 5,
+                radius: fishData.radius,
                 speedX: speedX,
                 speedY: speedY,
                 floatY: Math.random() * Math.PI * 2,
                 floatSpeed: 0.02 + Math.random() * 0.01,
-                floatAmplitude: 10 + Math.random() * 15
+                floatAmplitude: 10 + Math.random() * 15,
+                stage: stage,
+                color: fishData.color,
+                points: fishData.points
             });
         }
         
         function spawnPowerUp() {
-            if(Math.random() < 0.05) {
+            if(Math.random() < 0.3) { // 30%로 증가 (더 자주 등장)
                 let side = Math.floor(Math.random() * 4);
                 let x, y, speedX, speedY;
-                
+
                 switch(side) {
                     case 0: x = 820; y = Math.random() * 700 + 50; speedX = -0.8; speedY = 0; break;
                     case 1: x = -20; y = Math.random() * 700 + 50; speedX = 0.8; speedY = 0; break;
                     case 2: x = Math.random() * 700 + 50; y = 820; speedX = 0; speedY = -0.8; break;
                     case 3: x = Math.random() * 700 + 50; y = -20; speedX = 0; speedY = 0.8; break;
                 }
-                
+
                 powerUps.push({
-                    x: x, y: y, radius: 8, speedX: speedX, speedY: speedY,
+                    x: x, y: y, radius: 10, speedX: speedX, speedY: speedY,
                     floatY: Math.random() * Math.PI * 2, floatSpeed: 0.03, floatAmplitude: 20
                 });
             }
@@ -144,66 +524,51 @@
             }
         }
         
-        function spawnEnemy() {
-            let side = Math.floor(Math.random() * 4);
-            let x, y, directionX, directionY;
-            let speed = 0.8 + Math.random() * 0.4;
-            
-            switch(side) {
-                case 0:
-                    x = -50;
-                    y = Math.random() * 800;
-                    directionX = 1;
-                    directionY = (Math.random() - 0.5) * 0.5;
-                    break;
-                case 1:
-                    x = 850;
-                    y = Math.random() * 800;
-                    directionX = -1;
-                    directionY = (Math.random() - 0.5) * 0.5;
-                    break;
-                case 2:
-                    x = Math.random() * 800;
-                    y = -50;
-                    directionX = (Math.random() - 0.5) * 0.5;
-                    directionY = 1;
-                    break;
-                case 3:
-                    x = Math.random() * 800;
-                    y = 850;
-                    directionX = (Math.random() - 0.5) * 0.5;
-                    directionY = -1;
-                    break;
-            }
-            
-            enemies.push({
-                x: x,
-                y: y,
-                radius: 25,
-                directionX: directionX,
-                directionY: directionY,
-                speed: speed,
-                life: 600
-            });
-        }
         
         function spawnShark() {
             let side = Math.floor(Math.random() * 4);
             let x, y;
-            
+
             switch(side) {
                 case 0: x = -60; y = Math.random() * 800; break;
                 case 1: x = 860; y = Math.random() * 800; break;
                 case 2: x = Math.random() * 800; y = -60; break;
                 case 3: x = Math.random() * 800; y = 860; break;
             }
-            
+
             sharks.push({
                 x: x,
                 y: y,
-                size: 30,
-                speed: 1.0,
-                life: 900
+                size: 45,
+                speed: 1.3
+            });
+        }
+
+        function spawnUrchin() {
+            // 성게는 위/아래에서 등장하여 지나감
+            let side = Math.random() < 0.5 ? 2 : 3; // 위(2) 또는 아래(3)만
+            let x, y, speedX, speedY;
+
+            if(side === 2) {
+                // 아래에서 위로
+                x = Math.random() * 700 + 50;
+                y = 820;
+                speedX = 0;
+                speedY = -0.5; // 천천히 위로
+            } else {
+                // 위에서 아래로
+                x = Math.random() * 700 + 50;
+                y = -20;
+                speedX = 0;
+                speedY = 0.5; // 천천히 아래로
+            }
+
+            urchins.push({
+                x: x,
+                y: y,
+                radius: 20,
+                speedX: speedX,
+                speedY: speedY
             });
         }
         
@@ -223,28 +588,55 @@
         function drawCua(x, y, radius, moveX, moveY, isGameOver = false) {
             ctx.save();
             ctx.translate(x, y);
-            
+
+            // 무적 보호막 그리기 (가장 먼저)
+            if(player.isInvincible) {
+                ctx.save();
+                let shieldRadius = radius * 1.8;
+                let gradient = ctx.createRadialGradient(0, 0, radius * 1.2, 0, 0, shieldRadius);
+                gradient.addColorStop(0, 'rgba(255, 105, 180, 0)');
+                gradient.addColorStop(0.7, 'rgba(255, 105, 180, 0.4)');
+                gradient.addColorStop(1, 'rgba(255, 105, 180, 0.8)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, shieldRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 보호막 외곽선
+                ctx.strokeStyle = '#FF69B4';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
             let angle = 0;
             if(moveX !== 0 || moveY !== 0) {
                 angle = Math.atan2(moveY, moveX);
             }
             ctx.rotate(angle);
-            
+
             ctx.fillStyle = '#4A90E2';
-            if(player.isInvincible) {
-                ctx.globalAlpha = 0.5;
-            }
-            
+            ctx.globalAlpha = 1.0;
+
             ctx.beginPath();
             ctx.ellipse(0, 0, radius * 1.2, radius * 0.8, 0, 0, Math.PI * 2);
             ctx.fill();
-            
+
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = Math.max(1, radius * 0.05);
+            ctx.stroke();
+
+            ctx.fillStyle = '#4A90E2';
             ctx.beginPath();
-            ctx.moveTo(-radius * 1.2, 0);
-            ctx.lineTo(-radius * 1.8, -radius * 0.6);
-            ctx.lineTo(-radius * 1.8, radius * 0.6);
-            ctx.closePath();
+            ctx.arc(-radius * 1.5, 0, radius * 0.6, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = Math.max(2, radius * 0.08);
+            ctx.stroke();
             
             ctx.fillStyle = '#000';
             ctx.globalAlpha = 1.0;
@@ -258,62 +650,127 @@
             ctx.arc(eyeOffset, radius * 0.3, radius * 0.15, 0, Math.PI * 2);
             ctx.fill();
             
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = Math.max(2, radius * 0.08);
-            ctx.beginPath();
-            if(isGameOver) {
-                ctx.arc(eyeOffset * 1.8, 0, radius * 0.2, Math.PI, 0);
-            } else {
-                ctx.arc(eyeOffset * 1.8, 0, radius * 0.2, 0, Math.PI);
-            }
-            ctx.stroke();
             
             ctx.restore();
         }
         
-        function drawFish(x, y, radius, color = '#FF6B6B', direction = -1) {
+        function drawFish(x, y, radius, color = '#FF6B6B', direction = -1, stage = 1, isEnemy = false) {
             ctx.save();
             ctx.translate(x, y);
-            
+
             if(typeof direction === 'number' && direction > 10) {
                 ctx.rotate(direction === 90 ? -Math.PI/2 : Math.PI/2);
             } else if(direction > 0) {
                 ctx.scale(-1, 1);
             }
-            
+
+            let borderColor = isEnemy ? '#FF0000' : '#FFF';
+
             ctx.fillStyle = color;
-            
+
             ctx.beginPath();
             ctx.ellipse(0, 0, radius * 1.2, radius * 0.8, 0, 0, Math.PI * 2);
             ctx.fill();
-            
-            ctx.beginPath();
-            ctx.moveTo(radius * 1.2, 0);
-            ctx.lineTo(radius * 1.8, -radius * 0.6);
-            ctx.lineTo(radius * 1.8, radius * 0.6);
-            ctx.closePath();
-            ctx.fill();
-            
+
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = Math.max(2, radius * 0.08);
+            ctx.stroke();
+
+            ctx.fillStyle = color;
+            if(stage >= 6) {
+                // 삼중 꼬리 (6단계 이상)
+                ctx.beginPath();
+                ctx.moveTo(radius * 1.2, 0);
+                ctx.lineTo(radius * 1.8, -radius * 0.9);
+                ctx.lineTo(radius * 1.6, -radius * 0.3);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = Math.max(2, radius * 0.08);
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(radius * 1.2, 0);
+                ctx.lineTo(radius * 1.9, 0);
+                ctx.lineTo(radius * 1.6, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = Math.max(2, radius * 0.08);
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(radius * 1.2, 0);
+                ctx.lineTo(radius * 1.8, radius * 0.9);
+                ctx.lineTo(radius * 1.6, radius * 0.3);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = Math.max(2, radius * 0.08);
+                ctx.stroke();
+            } else if(stage >= 3) {
+                // 이중 꼬리 (3-5단계)
+                ctx.beginPath();
+                ctx.moveTo(radius * 1.2, 0);
+                ctx.lineTo(radius * 1.8, -radius * 0.8);
+                ctx.lineTo(radius * 1.6, -radius * 0.2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = Math.max(2, radius * 0.08);
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(radius * 1.2, 0);
+                ctx.lineTo(radius * 1.8, radius * 0.8);
+                ctx.lineTo(radius * 1.6, radius * 0.2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = Math.max(2, radius * 0.08);
+                ctx.stroke();
+            } else {
+                // 단일 꼬리 (1-2단계)
+                ctx.beginPath();
+                ctx.moveTo(radius * 1.2, 0);
+                ctx.lineTo(radius * 1.8, -radius * 0.6);
+                ctx.lineTo(radius * 1.8, radius * 0.6);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = Math.max(2, radius * 0.08);
+                ctx.stroke();
+            }
+
             ctx.fillStyle = '#000';
             ctx.beginPath();
             ctx.arc(-radius * 0.3, -radius * 0.2, radius * 0.15, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.restore();
         }
         
         function drawLevelCircle() {
-            let centerX = 400;
-            let centerY = 750;
-            let radius = 30;
-            
-            let progress = (player.score % 50) / 50;
-            
+            let centerX = 280;
+            let centerY = 760;
+            let radius = 25;
+
+            // "레벨" 텍스트 표시
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 16px "Noto Sans KR", Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('레벨', centerX, centerY - 40);
+
+            let progress = player.foodEaten / 5;
+
             ctx.fillStyle = '#2C3E50';
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fill();
-            
+
             if(progress > 0) {
                 ctx.fillStyle = '#4A90E2';
                 ctx.beginPath();
@@ -322,39 +779,187 @@
                 ctx.closePath();
                 ctx.fill();
             }
-            
+
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
             ctx.fillStyle = '#FFF';
-            ctx.font = '24px Arial';
+            ctx.font = '20px "Noto Sans KR", Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(player.level.toString(), centerX, centerY + 8);
+            ctx.fillText(player.level.toString(), centerX, centerY + 6);
         }
-        
+
+        function drawStaminaBar() {
+            let barX = 320;
+            let barY = 760;
+            let barWidth = 160;
+            let barHeight = 12;
+
+            let staminaPercent = player.stamina / player.maxStamina;
+
+            ctx.fillStyle = '#2C3E50';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            if(staminaPercent > 0) {
+                let fillColor = player.isDashing ? '#FF6B6B' : '#4CAF50';
+                ctx.fillStyle = fillColor;
+                ctx.fillRect(barX, barY, barWidth * staminaPercent, barHeight);
+            }
+
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+            ctx.fillStyle = '#FFF';
+            ctx.font = '12px "Noto Sans KR", Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('스테미나', barX, barY - 3);
+        }
+
+        function drawFishGuide() {
+            let startX = 80;
+            let startY = 30;
+            let spacing = 85;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(20, 10, 760, 60);
+
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(20, 10, 760, 60);
+
+            ctx.fillStyle = '#FFF';
+            ctx.font = '12px "Noto Sans KR", Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('등장 예정:', 25, 25);
+
+            for(let i = 0; i < 8; i++) {
+                let fishData = fishStages[i];
+                let x = startX + i * spacing;
+                let y = startY + 20;
+
+                let willAppear = false;
+                if(player.level >= 8) {
+                    willAppear = true;
+                } else {
+                    willAppear = fishData.stage <= player.level + 1;
+                }
+
+                if(willAppear) {
+                    let currentPlayerRadius = getPlayerRadius();
+                    let isEnemy = (player.level < 8 && fishData.stage === player.level + 1) || currentPlayerRadius < fishData.radius;
+                    drawFish(x, y, fishData.radius, fishData.color, -1, fishData.stage, isEnemy);
+                } else {
+                    ctx.fillStyle = '#666';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#AAA';
+                    ctx.font = '10px "Noto Sans KR", Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('?', x, y + 3);
+                }
+            }
+
+            if(player.level >= 6) {
+                let sharkX = startX + 8 * spacing;
+                let sharkY = startY + 20;
+
+                drawShark(sharkX, sharkY, 12, 0, 0);
+
+                ctx.fillStyle = '#FFF';
+                ctx.font = '10px "Noto Sans KR", Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('상어', sharkX, sharkY + 18);
+            }
+        }
+
+        function drawGameInfo() {
+            // 상단 우측 음소거 버튼만 표시
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.beginPath();
+            ctx.arc(760, 30, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#FFF';
+            ctx.font = '22px "Noto Sans KR", Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(isMuted ? '🔇' : '🔊', 760, 38);
+
+            // 점수를 하단에 표시 (레벨 동그라미 옆)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(500, 745, 180, 40);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(500, 745, 180, 40);
+
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 20px "Noto Sans KR", Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('점수:', 515, 772);
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText(player.score, 575, 772);
+        }
+
+        function drawTestButton() {
+            // 화면 우측 하단에 테스트 버튼 표시
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(680, 750, 110, 40);
+
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(680, 750, 110, 40);
+
+            ctx.fillStyle = '#FFF';
+            ctx.font = '14px "Noto Sans KR", Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('레벨업 (L키)', 735, 775);
+        }
+
         function drawShark(x, y, size, targetX, targetY) {
             ctx.save();
             ctx.translate(x, y);
-            
-            let angle = Math.atan2(targetY - y, targetX - x);
-            ctx.rotate(angle);
+
+            // 상어가 플레이어 방향을 바라보도록 좌우 방향 조정
+            if (targetX < x) {
+                ctx.scale(-1, 1); // 왼쪽을 바라볼 때 좌우 뒤집기
+            }
             
             ctx.fillStyle = '#708090';
-            
+
             ctx.beginPath();
             ctx.ellipse(0, 0, size * 1.5, size * 0.6, 0, 0, Math.PI * 2);
             ctx.fill();
-            
+
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = Math.max(2, size * 0.08);
+            ctx.stroke();
+
+            ctx.fillStyle = '#708090';
             ctx.beginPath();
             ctx.moveTo(-size * 1.5, 0);
             ctx.lineTo(-size * 2.2, -size * 0.8);
             ctx.lineTo(-size * 2.2, size * 0.8);
             ctx.closePath();
             ctx.fill();
-            
+
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = Math.max(2, size * 0.08);
+            ctx.stroke();
+
+            ctx.fillStyle = '#708090';
             ctx.beginPath();
             ctx.moveTo(0, -size * 0.6);
             ctx.lineTo(size * 0.5, -size * 1.0);
             ctx.lineTo(size * 0.3, -size * 0.6);
             ctx.closePath();
             ctx.fill();
+
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = Math.max(2, size * 0.08);
+            ctx.stroke();
             
             ctx.fillStyle = '#000';
             ctx.beginPath();
@@ -373,7 +978,50 @@
             
             ctx.restore();
         }
-        
+
+        function drawUrchin(x, y, radius) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // 성게 몸체 (보라색 원)
+            ctx.fillStyle = '#8B008B';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 외곽선
+            ctx.strokeStyle = '#4B0082';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 가시 12개
+            ctx.strokeStyle = '#6B006B';
+            ctx.lineWidth = 3;
+            for(let i = 0; i < 12; i++) {
+                let angle = (i / 12) * Math.PI * 2;
+                let startX = Math.cos(angle) * radius;
+                let startY = Math.sin(angle) * radius;
+                let endX = Math.cos(angle) * (radius + 10);
+                let endY = Math.sin(angle) * (radius + 10);
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+
+            // 중앙에 작은 눈 표시
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-5, -3, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(5, -3, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
         function createParticle(x, y) {
             for(let i = 0; i < 5; i++) {
                 particles.push({
@@ -392,9 +1040,35 @@
             gradient.addColorStop(0, '#87CEEB');
             gradient.addColorStop(0.5, '#4682B4');
             gradient.addColorStop(1, '#191970');
-            
+
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 800, 800);
+        }
+
+        function drawIntroScreen() {
+            ctx.fillStyle = '#2C3E50';
+            ctx.font = 'bold 64px "Noto Sans KR", Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('아기고래 쿠아', 400, 250);
+
+            drawCua(400, 350, 50, 0, 0);
+
+            ctx.fillStyle = '#4A90E2';
+            ctx.font = '24px "Noto Sans KR", Arial';
+            ctx.fillText('아무 키나 누르거나 클릭해서 시작하세요', 400, 500);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = '18px "Noto Sans KR", Arial';
+            ctx.fillText('방향키 또는 마우스로 이동하여 빨간 물고기를 먹고 성장하세요!', 400, 540);
+            ctx.fillText('검은 적과 회색 상어를 피하세요! 우클릭으로 일시정지', 400, 570);
+            ctx.fillText('스페이스바 또는 마우스 클릭으로 대쉬! (스테미나 소모)', 400, 600);
+
+            // 인트로 화면 소리 버튼
+            ctx.fillStyle = '#6B6B6B';
+            ctx.fillRect(720, 20, 60, 40);
+            ctx.fillStyle = '#FFF';
+            ctx.font = '24px "Noto Sans KR", Arial';
+            ctx.fillText(isMuted ? '🔇' : '🔊', 750, 45);
         }
         
         function checkCollision(obj1, obj2) {
@@ -406,35 +1080,184 @@
         function update() {
             if(gameState !== 'playing' || isPaused) return;
             
-            let moveX = 0, moveY = 0;
-            if(keys['ArrowUp'] || keys['w'] || keys['W']) { player.y -= player.speed; moveY = -1; }
-            if(keys['ArrowDown'] || keys['s'] || keys['S']) { player.y += player.speed; moveY = 1; }
-            if(keys['ArrowLeft'] || keys['a'] || keys['A']) { player.x -= player.speed; moveX = -1; }
-            if(keys['ArrowRight'] || keys['d'] || keys['D']) { player.x += player.speed; moveX = 1; }
-            
-            if(moveX !== 0 || moveY !== 0) {
-                player.lastMoveX = moveX;
-                player.lastMoveY = moveY;
+            let inputX = 0, inputY = 0;
+            let keyboardMovement = false;
+
+            player.isDashing = (keys[' '] || mousePressed) && player.stamina > 5;
+            let baseSpeed = player.isSlowed ? player.speed * 0.5 : player.speed; // 성게 디버프 적용
+            let maxSpeed = player.isDashing ? baseSpeed * 2.5 : baseSpeed;
+
+            // 키보드 입력 감지
+            if(keys['ArrowUp'] || keys['w'] || keys['W']) { inputY = -1; keyboardMovement = true; usingKeyboard = true; }
+            if(keys['ArrowDown'] || keys['s'] || keys['S']) { inputY = 1; keyboardMovement = true; usingKeyboard = true; }
+            if(keys['ArrowLeft'] || keys['a'] || keys['A']) { inputX = -1; keyboardMovement = true; usingKeyboard = true; }
+            if(keys['ArrowRight'] || keys['d'] || keys['D']) { inputX = 1; keyboardMovement = true; usingKeyboard = true; }
+
+            // 마우스 입력 처리
+            if(!keyboardMovement && !usingKeyboard) {
+                let dx = mouse.x - player.x;
+                let dy = mouse.y - player.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if(distance > 10) {
+                    inputX = dx / distance;
+                    inputY = dy / distance;
+                }
             }
-            
+
+            // 부드러운 가속/감속 (관성 적용)
+            let acceleration = 0.4;
+            let friction = 0.85;
+
+            // 목표 속도 계산
+            let targetVelocityX = inputX * maxSpeed;
+            let targetVelocityY = inputY * maxSpeed;
+
+            // 부드러운 가속
+            if(Math.abs(inputX) > 0.1) {
+                player.velocityX += (targetVelocityX - player.velocityX) * acceleration;
+            } else {
+                player.velocityX *= friction; // 마찰 적용
+            }
+
+            if(Math.abs(inputY) > 0.1) {
+                player.velocityY += (targetVelocityY - player.velocityY) * acceleration;
+            } else {
+                player.velocityY *= friction; // 마찰 적용
+            }
+
+            // 위치 업데이트
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+
+            // 이동 방향 기록 (그리기용)
+            if(Math.abs(player.velocityX) > 0.1 || Math.abs(player.velocityY) > 0.1) {
+                player.lastMoveX = player.velocityX / maxSpeed;
+                player.lastMoveY = player.velocityY / maxSpeed;
+            }
+
+            if(player.isDashing) {
+                player.stamina -= 1.5;
+                if(player.stamina <= 0) {
+                    player.stamina = 0;
+                    player.isDashing = false;
+                }
+            } else {
+                player.stamina = Math.min(player.maxStamina, player.stamina + 0.2);
+            }
+
             player.x = Math.max(player.radius, Math.min(800-player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(800-player.radius, player.y));
             
-            for(let i = enemies.length - 1; i >= 0; i--) {
-                let enemy = enemies[i];
-                enemy.x += enemy.directionX * enemy.speed;
-                enemy.y += enemy.directionY * enemy.speed;
-                enemy.life--;
-                
-                if(enemy.life <= 0 || enemy.x < -60 || enemy.x > 860 || enemy.y < -60 || enemy.y > 860) {
-                    enemies.splice(i, 1);
+            for(let i = fishes.length - 1; i >= 0; i--) {
+                let fish = fishes[i];
+
+                // AI 행동 패턴 추가
+                let currentPlayerRadius = getPlayerRadius();
+                let dx = player.x - fish.x;
+                let dy = player.y - fish.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                // 먹이 물고기 (작은 물고기)의 도망 행동
+                if(currentPlayerRadius >= fish.radius && distance < 80) {
+                    let escapeSpeed = 0.4;
+                    let escapeX = -dx / distance * escapeSpeed;
+                    let escapeY = -dy / distance * escapeSpeed;
+                    fish.speedX += escapeX * 0.2; // 기존 속도에 도망 속도 추가
+                    fish.speedY += escapeY * 0.2;
+                }
+
+                // 적 물고기 (큰 물고기)의 추적 행동
+                if(player.level < 8 && fish.stage === player.level + 1 && distance < 120) {
+                    let chaseSpeed = 0.3;
+                    let chaseX = dx / distance * chaseSpeed;
+                    let chaseY = dy / distance * chaseSpeed;
+                    fish.speedX += chaseX * 0.15; // 기존 속도에 추적 속도 추가
+                    fish.speedY += chaseY * 0.15;
+                }
+
+                // 속도 제한 (너무 빨라지지 않도록)
+                let maxSpeed = 1.2;
+                let currentSpeed = Math.sqrt(fish.speedX * fish.speedX + fish.speedY * fish.speedY);
+                if(currentSpeed > maxSpeed) {
+                    fish.speedX = (fish.speedX / currentSpeed) * maxSpeed;
+                    fish.speedY = (fish.speedY / currentSpeed) * maxSpeed;
+                }
+
+                fish.x += fish.speedX;
+                fish.y += fish.speedY;
+                fish.floatY += fish.floatSpeed;
+                fish.y += Math.sin(fish.floatY) * fish.floatAmplitude * 0.1;
+
+                if(fish.x < -50 || fish.x > 850 || fish.y < -50 || fish.y > 850) {
+                    fishes.splice(i, 1);
                     continue;
                 }
-                
-                if(checkCollision(player, enemy) && !player.isInvincible) {
-                    gameState = 'gameOver';
-                    playSound(150, 1.0, 'sawtooth');
-                    player.combo = 0;
+
+                if(checkCollision(player, fish)) {
+                    let currentPlayerRadius = getPlayerRadius();
+
+                    if(player.level < 8 && fish.stage === player.level + 1) {
+                        if(!player.isInvincible) {
+                            gameState = 'gameOver';
+                            playSound(150, 1.0, 'sawtooth');
+                            player.combo = 0;
+                            stopBGM(); // 게임오버 시 BGM 정지
+                        }
+                    } else if(currentPlayerRadius >= fish.radius) {
+                        createParticle(fish.x, fish.y);
+                        fishes.splice(i, 1);
+
+                        // 경험치 계산 (레벨 차이에 따른 감소)
+                        let xpGain = 1;
+                        let stageDifference = player.level - fish.stage;
+                        if(stageDifference > 0) {
+                            xpGain = Math.max(0.1, 1 - (stageDifference * 0.3));
+                        }
+                        player.foodEaten += xpGain;
+
+                        // 점수 계산 (레벨 차이에 따른 감소)
+                        let scoreGain = Math.floor(fish.points * xpGain);
+                        player.score += scoreGain;
+
+                        player.combo++;
+                        player.radius = currentPlayerRadius;
+
+                        let staminaGain = 0;
+                        if(fish.stage <= 3) {
+                            staminaGain = 34;
+                        } else {
+                            staminaGain = 100;
+                        }
+                        player.stamina = Math.min(player.maxStamina, player.stamina + staminaGain);
+
+                        playSound(440 + player.combo * 50, 0.1, 'sine');
+
+                        if(player.foodEaten >= 5) {
+                            player.level++;
+                            player.foodEaten = 0;
+                            player.score += 50;
+                            player.maxStamina += 20; // 레벨업 시 최대 스테미나 증가
+                            player.stamina = player.maxStamina; // 스테미나 완전 회복
+                            levelUpFlash = 30;
+                            playSound(1200, 0.3, 'triangle');
+
+                            // BGM 업데이트 (레벨업 시 음악 변화)
+                            if(!isMuted) {
+                                setTimeout(() => updateBGM(), 500);
+                            }
+
+                            if(player.level >= 6) {
+                                warningTime = 120;
+                            }
+
+                            if(player.level >= 10) {
+                                gameState = 'victory';
+                                gameClearTime = Math.floor((Date.now() - gameStartTime) / 1000); // 초 단위로 저장
+                                stopBGM(); // 승리 시 BGM 정지
+                            }
+                        }
+                    }
                 }
             }
             
@@ -444,9 +1267,7 @@
                 let dy = player.y - shark.y;
                 let distance = Math.sqrt(dx*dx + dy*dy);
                 
-                shark.life--;
-                
-                if(shark.life <= 0 || shark.x < -80 || shark.x > 880 || shark.y < -80 || shark.y > 880) {
+                if(shark.x < -80 || shark.x > 880 || shark.y < -80 || shark.y > 880) {
                     sharks.splice(i, 1);
                     continue;
                 }
@@ -458,59 +1279,52 @@
                 
                 if(distance < (player.radius + shark.size) && !player.isInvincible) {
                     gameState = 'gameOver';
+                    gameClearTime = Math.floor((Date.now() - gameStartTime) / 1000); // 게임오버 시간 저장
                     playSound(150, 1.0, 'sawtooth');
                     player.combo = 0;
+                    stopBGM(); // 게임오버 시 BGM 정지
                 }
             }
-            
-            for(let i=foods.length-1; i>=0; i--) {
-                let food = foods[i];
-                food.x += food.speedX;
-                food.y += food.speedY;
-                food.floatY += food.floatSpeed;
-                food.y += Math.sin(food.floatY) * food.floatAmplitude * 0.1;
-                
-                if(food.x < -30 || food.x > 830 || food.y < -30 || food.y > 830) {
-                    foods.splice(i, 1);
+
+            // 성게 업데이트 및 충돌 처리
+            for(let i = urchins.length - 1; i >= 0; i--) {
+                let urchin = urchins[i];
+
+                // 위아래로 이동
+                urchin.x += urchin.speedX;
+                urchin.y += urchin.speedY;
+
+                // 화면 밖으로 나가면 제거
+                if(urchin.y < -40 || urchin.y > 840) {
+                    urchins.splice(i, 1);
                     continue;
                 }
-                
-                if(checkCollision(player, food)) {
-                    createParticle(food.x, food.y);
-                    foods.splice(i, 1);
-                    player.radius++;
-                    player.score += 10;
-                    player.foodEaten++;
-                    player.combo++;
-                    
-                    playSound(800 + player.combo * 50, 0.1);
-                    
-                    if(player.combo >= 5) {
-                        player.score += 25;
-                        for(let j = 0; j < 3; j++) {
-                            setTimeout(() => playSound(1000 + j * 200, 0.1), j * 100);
-                        }
-                        player.combo = 0;
-                    }
-                    
-                    if(player.foodEaten >= 5 && player.level < 10) {
-                        player.level++;
-                        player.foodEaten = 0;
-                        player.radius += 3;
-                        levelUpFlash = 30;
-                        playSound(1200, 0.3, 'triangle');
-                        
-                        if(player.level >= 8) {
-                            warningTime = 120;
-                        }
-                        
-                        if(player.level >= 10) {
-                            gameState = 'victory';
-                        }
+
+                // 충돌 감지
+                let dx = player.x - urchin.x;
+                let dy = player.y - urchin.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if(distance < (player.radius + urchin.radius + 10)) { // 가시 포함
+                    if(!player.isInvincible && !player.isSlowed) {
+                        // 페널티 적용
+                        player.foodEaten = Math.max(0, player.foodEaten - 1); // 경험치 1 감소
+                        player.stamina = Math.max(0, player.stamina - 30); // 스테미나 30 감소
+                        player.isSlowed = true;
+                        player.slowTime = 180; // 3초 (60fps 기준)
+                        playSound(200, 0.3, 'sawtooth');
                     }
                 }
             }
-            
+
+            // 디버프 시간 감소
+            if(player.slowTime > 0) {
+                player.slowTime--;
+                if(player.slowTime <= 0) {
+                    player.isSlowed = false;
+                }
+            }
+
             for(let i=powerUps.length-1; i>=0; i--) {
                 let powerUp = powerUps[i];
                 powerUp.x += powerUp.speedX;
@@ -554,26 +1368,23 @@
             }
             
             gameTime++;
-            foodSpawnTimer++;
-            enemySpawnTimer++;
-            
-            let foodSpawnInterval = Math.max(90 - player.level * 10, 30);
-            if(foodSpawnTimer >= foodSpawnInterval) {
-                spawnFood();
+            fishSpawnTimer++;
+
+            let fishSpawnInterval = Math.max(60 - player.level * 5, 20);
+            if(fishSpawnTimer >= fishSpawnInterval) {
+                // 초기 레벨에서는 더 많은 물고기 스폰
+                let spawnCount = player.level <= 3 ? 2 : 1;
+                for(let i = 0; i < spawnCount; i++) {
+                    spawnFish();
+                }
                 if(gameTime % 200 === 0) spawnPowerUp();
-                foodSpawnTimer = 0;
-            }
-            
-            let enemySpawnInterval = Math.max(200 - player.level * 15, 80);
-            if(enemySpawnTimer >= enemySpawnInterval) {
-                spawnEnemy();
-                enemySpawnTimer = 0;
+                fishSpawnTimer = 0;
             }
             
             sharkSpawnTimer++;
             let requiredSharks = 0;
-            if(player.level === 8) requiredSharks = 1;
-            else if(player.level === 9) requiredSharks = 2;
+            if(player.level >= 6 && player.level < 8) requiredSharks = 1;
+            else if(player.level >= 8 && player.level < 10) requiredSharks = 2;
             else if(player.level >= 10) requiredSharks = 3;
             
             if(sharks.length < requiredSharks && sharkSpawnTimer >= 300) {
@@ -601,9 +1412,7 @@
                 }
             }
             
-            document.getElementById('score').textContent = player.score;
-            document.getElementById('size').textContent = player.radius;
-            document.getElementById('level').textContent = player.level;
+            // 점수와 레벨은 캔버스에 직접 그려짐
         }
         
         function draw() {
@@ -614,12 +1423,17 @@
                 ctx.fillRect(0, 0, 800, 800);
             }
             
-            if(gameState === 'playing') {
+            if(gameState === 'intro') {
+                drawIntroScreen();
+            } else if(gameState === 'playing') {
                 drawCua(player.x, player.y, player.radius, player.lastMoveX, player.lastMoveY);
-                
-                foods.forEach(food => {
-                    let direction = food.speedX < 0 ? -1 : (food.speedX > 0 ? 1 : (food.speedY < 0 ? 90 : -90));
-                    drawFish(food.x, food.y, food.radius, '#FF6B6B', direction);
+
+                fishes.forEach(fish => {
+                    // 물고기는 항상 좌우 방향만 보도록 함
+                    let direction = fish.speedX < 0 ? -1 : 1;
+                    let currentPlayerRadius = getPlayerRadius();
+                    let isEnemy = (player.level < 8 && fish.stage === player.level + 1) || currentPlayerRadius < fish.radius;
+                    drawFish(fish.x, fish.y, fish.radius, fish.color, direction, fish.stage, isEnemy);
                 });
                 
                 particles.forEach(p => {
@@ -636,78 +1450,156 @@
                     ctx.fill();
                     ctx.restore();
                 });
-                
-                ctx.fillStyle = '#2C3E50';
-                enemies.forEach(enemy => {
-                    ctx.beginPath();
-                    ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-                
-                
-                ctx.fillStyle = '#FF69B4';
+
+                // 무적 아이템 (별 모양)
                 powerUps.forEach(powerUp => {
+                    ctx.save();
+                    ctx.translate(powerUp.x, powerUp.y);
+                    ctx.rotate(gameTime * 0.05); // 천천히 회전
+
+                    // 외곽 글로우 효과
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 25;
+
+                    // 별 그리기 (5개 꼭지점)
+                    ctx.fillStyle = '#FFD700';
+                    ctx.strokeStyle = '#FFF';
+                    ctx.lineWidth = 2;
                     ctx.beginPath();
-                    ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
+                    for(let i = 0; i < 5; i++) {
+                        let angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+                        let x = Math.cos(angle) * powerUp.radius;
+                        let y = Math.sin(angle) * powerUp.radius;
+                        if(i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
                     ctx.fill();
+                    ctx.stroke();
+
+                    // 중앙 하얀 별 작게
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath();
+                    for(let i = 0; i < 5; i++) {
+                        let angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+                        let x = Math.cos(angle) * powerUp.radius * 0.4;
+                        let y = Math.sin(angle) * powerUp.radius * 0.4;
+                        if(i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.restore();
                 });
                 
                 bonusFish.forEach(bonus => {
-                    let direction = bonus.speedX < 0 ? -1 : (bonus.speedX > 0 ? 1 : (bonus.speedY < 0 ? 90 : -90));
+                    // 보너스 물고기도 항상 좌우 방향만 보도록 함
+                    let direction = bonus.speedX < 0 ? -1 : 1;
                     drawFish(bonus.x, bonus.y, bonus.radius, '#FFD700', direction);
                 });
                 
                 sharks.forEach(shark => {
                     drawShark(shark.x, shark.y, shark.size, player.x, player.y);
                 });
+
+                urchins.forEach(urchin => {
+                    drawUrchin(urchin.x, urchin.y, urchin.radius);
+                });
                 
                 if(warningTime > 0) {
                     ctx.fillStyle = '#FF4500';
                     ctx.font = '20px Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText('레벨 8! 상어 출현!', 400, 80);
+                    if(player.level === 6) {
+                        ctx.fillText('레벨 6! 상어 출현!', 400, 80);
+                    } else if(player.level === 8) {
+                        ctx.fillText('레벨 8! 상어 증가!', 400, 80);
+                    } else if(player.level === 10) {
+                        ctx.fillText('레벨 10! 상어 대거 출현!', 400, 80);
+                    }
                 }
                 
                 if(player.isInvincible) {
                     ctx.fillStyle = '#FF69B4';
-                    ctx.font = '16px Arial';
+                    ctx.font = '16px "Noto Sans KR", Arial';
                     ctx.textAlign = 'left';
                     ctx.fillText('무적: ' + Math.ceil(player.invincibleTime/60) + '초', 20, 30);
                 }
                 
                 drawLevelCircle();
+                drawStaminaBar();
+                drawFishGuide();
+                drawTestButton();
+                drawGameInfo();
                 
                 if(isPaused) {
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
                     ctx.fillRect(0, 0, 800, 800);
                     ctx.fillStyle = '#FFF';
-                    ctx.font = '48px Arial';
+                    ctx.font = '48px "Noto Sans KR", Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText('PAUSED', 400, 400);
-                    ctx.font = '20px Arial';
-                    ctx.fillText('Press ESC to Resume', 400, 450);
+                    ctx.fillText('일시정지', 400, 300);
+                    ctx.font = '20px "Noto Sans KR", Arial';
+                    ctx.fillText('ESC 키 또는 우클릭으로 재개', 400, 360);
+                    ctx.fillText('클릭으로 재개', 400, 390);
+
+                    // 다시시작 버튼
+                    ctx.fillStyle = '#FF6B6B';
+                    ctx.fillRect(220, 440, 120, 40);
+                    ctx.fillStyle = '#FFF';
+                    ctx.font = '16px "Noto Sans KR", Arial';
+                    ctx.fillText('다시시작', 280, 465);
+
+                    // 홈으로 가기 버튼
+                    ctx.fillStyle = '#4A90E2';
+                    ctx.fillRect(360, 440, 120, 40);
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillText('홈으로', 420, 465);
+
+                    // 소리 버튼
+                    ctx.fillStyle = '#6B6B6B';
+                    ctx.fillRect(500, 440, 80, 40);
+                    ctx.fillStyle = '#FFF';
+                    ctx.font = '24px "Noto Sans KR", Arial';
+                    ctx.fillText(isMuted ? '🔇' : '🔊', 540, 465);
                 }
             } else if(gameState === 'gameOver') {
                 drawCua(player.x, player.y, player.radius, player.lastMoveX, player.lastMoveY, true);
-                
+
                 ctx.fillStyle = '#2C3E50';
-                ctx.font = '30px Arial';
+                ctx.font = '30px "Noto Sans KR", Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('Game Over', 400, 360);
-                
-                ctx.font = '16px Arial';
-                ctx.fillText('Score: ' + player.score, 400, 420);
-                ctx.fillText('Click or Press SPACE to Restart', 400, 480);
+
+                ctx.font = '16px "Noto Sans KR", Arial';
+                ctx.fillText('점수: ' + player.score, 400, 420);
+
+                // 게임오버 시 플레이 시간 표시 (저장된 시간 사용)
+                let minutes = Math.floor(gameClearTime / 60);
+                let seconds = gameClearTime % 60;
+                let timeString = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                ctx.fillText('플레이 시간: ' + timeString, 400, 450);
+
+                ctx.fillText('클릭 또는 스페이스바를 눌러 재시작', 400, 480);
             } else if(gameState === 'victory') {
                 ctx.fillStyle = '#4A90E2';
-                ctx.font = '30px Arial';
+                ctx.font = '30px "Noto Sans KR", Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('Victory!', 400, 360);
-                
-                ctx.font = '16px Arial';
-                ctx.fillText('Level 10 Reached!', 400, 420);
-                ctx.fillText('Score: ' + player.score, 400, 460);
-                ctx.fillText('Click or Press SPACE to Restart', 400, 500);
+
+                ctx.font = '16px "Noto Sans KR", Arial';
+                ctx.fillText('레벨 10 달성!', 400, 420);
+                ctx.fillText('점수: ' + player.score, 400, 460);
+
+                // 클리어 시간 표시 (분:초 형식)
+                let minutes = Math.floor(gameClearTime / 60);
+                let seconds = gameClearTime % 60;
+                let timeString = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                ctx.fillText('클리어 시간: ' + timeString, 400, 490);
+
+                ctx.fillText('클릭 또는 스페이스바를 눌러 재시작', 400, 530);
             }
         }
         
@@ -717,52 +1609,165 @@
             requestAnimationFrame(gameLoop);
         }
         
-        function restartGame() {
-            player = {x:400, y:400, radius:15, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0};
-            foods = [];
-            enemies = [];
+        function startGame() {
+            player = {x:400, y:400, radius:8, speed:3, score:0, level:1, foodEaten:0, isInvincible:false, invincibleTime:0, combo:0, lastMoveX:0, lastMoveY:0, stamina:100, maxStamina:100, isDashing:false, velocityX:0, velocityY:0, isSlowed:false, slowTime:0};
+            fishes = [];
             sharks = [];
             powerUps = [];
             bonusFish = [];
             particles = [];
-            foodSpawnTimer = 0;
-            enemySpawnTimer = 0;
+            urchins = [];
+            fishSpawnTimer = 0;
             sharkSpawnTimer = 0;
             gameTime = 0;
+            gameStartTime = Date.now();
+            gameClearTime = 0;
             levelUpFlash = 0;
             isPaused = false;
-            
-            for(let i=0; i<5; i++) {
-                spawnFood();
+            usingKeyboard = false;
+
+            for(let i=0; i<8; i++) {
+                spawnFish();
             }
-            shark = null;
+            // 성게 2~3개 초기 스폰
+            for(let i=0; i<3; i++) {
+                spawnUrchin();
+            }
             warningTime = 0;
             gameState = 'playing';
-            createFood();
-            createEnemies();
+
+            // BGM 시작
+            if(!isMuted) {
+                startBGM();
+            }
+        }
+
+        function restartGame() {
+            startGame();
         }
         
         document.addEventListener('keydown', e => {
             keys[e.key] = true;
-            if((gameState === 'gameOver' || gameState === 'victory') && e.key === ' ') {
+
+            if(gameState === 'intro') {
+                startGame();
+            } else if((gameState === 'gameOver' || gameState === 'victory') && e.key === ' ') {
                 restartGame();
             }
+
             if(e.key === 'Escape') {
                 if(gameState === 'playing') {
                     isPaused = !isPaused;
+                    // 일시정지 시 BGM 제어
+                    if(isPaused) {
+                        pauseBGM();
+                    } else {
+                        resumeBGM();
+                    }
+                }
+            }
+
+            // 테스트용 레벨업 (L키)
+            if(e.key === 'l' || e.key === 'L') {
+                if(gameState === 'playing' && player.level < 10) {
+                    player.level++;
+                    player.foodEaten = 0;
+                    player.score += 50;
+                    player.maxStamina += 20;
+                    player.stamina = player.maxStamina;
+                    levelUpFlash = 30;
+                    playSound(1200, 0.3, 'triangle');
+
+                    // BGM 업데이트 (테스트 레벨업 시)
+                    if(!isMuted) {
+                        setTimeout(() => updateBGM(), 500);
+                    }
+
+                    if(player.level >= 6) {
+                        warningTime = 120;
+                    }
                 }
             }
         });
         document.addEventListener('keyup', e => keys[e.key] = false);
-        canvas.addEventListener('click', () => {
-            if(gameState === 'gameOver' || gameState === 'victory') restartGame();
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+
+            if(Math.abs(e.movementX) > 3 || Math.abs(e.movementY) > 3) {
+                usingKeyboard = false;
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // 음소거 버튼 클릭 감지 (원형 버튼, 중심: 760, 30, 반지름: 25)
+            const muteButtonDistance = Math.sqrt(Math.pow(clickX - 760, 2) + Math.pow(clickY - 30, 2));
+            if(muteButtonDistance <= 25 && (gameState === 'playing' || gameState === 'intro')) {
+                toggleMute();
+                return;
+            }
+
+            if(gameState === 'intro') {
+                if(clickX >= 720 && clickX <= 780 && clickY >= 20 && clickY <= 60) {
+                    // 인트로 화면 소리 버튼 (기존 위치)
+                    toggleMute();
+                } else {
+                    startGame();
+                    usingKeyboard = false;
+                }
+            } else if(gameState === 'gameOver' || gameState === 'victory') {
+                restartGame();
+            } else if(isPaused) {
+                if(clickX >= 220 && clickX <= 340 && clickY >= 440 && clickY <= 480) {
+                    // 다시시작 버튼
+                    restartGame();
+                } else if(clickX >= 360 && clickX <= 480 && clickY >= 440 && clickY <= 480) {
+                    // 홈으로 가기 버튼
+                    gameState = 'intro';
+                    isPaused = false;
+                    stopBGM();
+                } else if(clickX >= 500 && clickX <= 580 && clickY >= 440 && clickY <= 480) {
+                    // 소리 버튼
+                    toggleMute();
+                } else {
+                    // 일시정지 해제
+                    isPaused = false;
+                    usingKeyboard = false;
+                    resumeBGM();
+                }
+            } else if(gameState === 'playing') {
+                mousePressed = true;
+                usingKeyboard = false;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            mousePressed = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mousePressed = false;  // 마우스가 캔버스 밖으로 나가면 대시 중단
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if(gameState === 'playing') {
+                isPaused = !isPaused;
+                // 일시정지 시 BGM 제어
+                if(isPaused) {
+                    pauseBGM();
+                } else {
+                    resumeBGM();
+                }
+            }
         });
         
         initAudio();
-        
-        for(let i=0; i<5; i++) {
-            spawnFood();
-        }
         gameLoop();
     </script>
 </body>
