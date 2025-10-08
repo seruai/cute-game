@@ -380,6 +380,15 @@
                 audio.loop = true;
                 audio.volume = 0;
                 audio.preload = 'auto';
+
+                // ended 이벤트로도 루프 보장
+                audio.addEventListener('ended', function() {
+                    if(this === currentBGM && !isMuted && gameState === 'playing' && !isPaused) {
+                        this.currentTime = 0;
+                        this.play().catch(e => console.log('BGM loop error:', e));
+                    }
+                });
+
                 audio.load();
             });
         }
