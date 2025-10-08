@@ -1886,40 +1886,37 @@
 
                 const rect = mobileControl.getBoundingClientRect();
                 const touch = e.touches[0];
-                const touchX = touch.clientX - rect.left;
-                const touchY = touch.clientY - rect.top;
-
-                // 컨트롤 영역 중심을 기준으로 방향 계산
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                // 캔버스 좌표로 변환 (플레이어 주변으로 매핑)
-                const offsetX = (touchX - centerX) * 2;
-                const offsetY = (touchY - centerY) * 2;
-
-                mouse.x = player.x + offsetX;
-                mouse.y = player.y + offsetY;
+                touchStartX = touch.clientX - rect.left;
+                touchStartY = touch.clientY - rect.top;
 
                 isTouching = true;
+
+                // 게임 시작 (인트로 화면일 때)
+                if(gameState === 'intro') {
+                    startGame();
+                    usingKeyboard = false;
+                } else if(gameState === 'gameOver' || gameState === 'victory') {
+                    restartGame();
+                }
             });
 
             mobileControl.addEventListener('touchmove', (e) => {
                 e.preventDefault();
                 touchCount = e.touches.length;
 
+                if(gameState !== 'playing' || isPaused) return;
+
                 const rect = mobileControl.getBoundingClientRect();
                 const touch = e.touches[0];
-                const touchX = touch.clientX - rect.left;
-                const touchY = touch.clientY - rect.top;
+                const currentX = touch.clientX - rect.left;
+                const currentY = touch.clientY - rect.top;
 
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
+                // 터치 시작 지점 기준으로 상대적 이동
+                const deltaX = (currentX - touchStartX) * 3;
+                const deltaY = (currentY - touchStartY) * 3;
 
-                const offsetX = (touchX - centerX) * 2;
-                const offsetY = (touchY - centerY) * 2;
-
-                mouse.x = player.x + offsetX;
-                mouse.y = player.y + offsetY;
+                mouse.x = player.x + deltaX;
+                mouse.y = player.y + deltaY;
             });
 
             mobileControl.addEventListener('touchend', (e) => {
