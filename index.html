@@ -452,12 +452,21 @@
         }
 
         function stopBGM() {
+            isFading = false; // 페이딩 플래그 초기화
+
             if(currentBGM) {
-                fadeOut(currentBGM, () => {
-                    currentBGM.pause();
-                    currentBGM.currentTime = 0;
-                });
+                currentBGM.pause();
+                currentBGM.currentTime = 0;
+                currentBGM.volume = 0;
             }
+
+            // 모든 BGM 정지
+            Object.values(bgmAudios).forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.volume = 0;
+            });
+
             currentBGM = null;
             currentBGMLevel = 0;
         }
@@ -1933,10 +1942,8 @@
             // BGM 완전히 정지
             stopBGM();
 
-            // 약간의 딜레이 후 게임 시작
-            setTimeout(() => {
-                startGame();
-            }, 100);
+            // 즉시 게임 시작 (딜레이 제거)
+            startGame();
         }
         
         document.addEventListener('keydown', e => {
