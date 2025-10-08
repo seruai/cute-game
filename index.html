@@ -1643,15 +1643,28 @@
                 drawGameInfo();
                 
                 if(isPaused) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                     ctx.fillRect(0, 0, 800, 800);
+
+                    // 텍스트 그림자 효과
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetX = 3;
+                    ctx.shadowOffsetY = 3;
+
                     ctx.fillStyle = '#FFF';
-                    ctx.font = '48px "Noto Sans KR", Arial';
+                    ctx.font = 'bold 48px "Noto Sans KR", Arial';
                     ctx.textAlign = 'center';
                     ctx.fillText('일시정지', 400, 300);
+
                     ctx.font = '20px "Noto Sans KR", Arial';
                     ctx.fillText('ESC 키 또는 우클릭으로 재개', 400, 360);
                     ctx.fillText('클릭으로 재개', 400, 390);
+
+                    // 그림자 효과 제거
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
 
                     // 다시시작 버튼
                     ctx.fillStyle = '#FF6B6B';
@@ -1676,38 +1689,72 @@
             } else if(gameState === 'gameOver') {
                 drawCua(player.x, player.y, player.radius, player.lastMoveX, player.lastMoveY, true);
 
-                ctx.fillStyle = '#2C3E50';
-                ctx.font = '30px "Noto Sans KR", Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Game Over', 400, 360);
+                // 반투명 배경
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, 800, 800);
 
-                ctx.font = '16px "Noto Sans KR", Arial';
-                ctx.fillText('점수: ' + player.score, 400, 420);
+                // 텍스트 그림자 효과
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 3;
+                ctx.shadowOffsetY = 3;
+
+                ctx.fillStyle = '#FF6B6B';
+                ctx.font = 'bold 48px "Noto Sans KR", Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over', 400, 320);
+
+                ctx.fillStyle = '#FFF';
+                ctx.font = '24px "Noto Sans KR", Arial';
+                ctx.fillText('점수: ' + player.score, 400, 380);
 
                 // 게임오버 시 플레이 시간 표시 (저장된 시간 사용)
                 let minutes = Math.floor(gameClearTime / 60);
                 let seconds = gameClearTime % 60;
                 let timeString = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-                ctx.fillText('플레이 시간: ' + timeString, 400, 450);
+                ctx.fillText('플레이 시간: ' + timeString, 400, 420);
 
-                ctx.fillText('클릭 또는 스페이스바를 눌러 재시작', 400, 480);
+                ctx.font = '18px "Noto Sans KR", Arial';
+                ctx.fillText('클릭 또는 스페이스바를 눌러 재시작', 400, 470);
+
+                // 그림자 효과 제거
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
             } else if(gameState === 'victory') {
-                ctx.fillStyle = '#4A90E2';
-                ctx.font = '30px "Noto Sans KR", Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Victory!', 400, 360);
+                // 반투명 배경
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, 800, 800);
 
-                ctx.font = '16px "Noto Sans KR", Arial';
-                ctx.fillText('레벨 10 달성!', 400, 420);
-                ctx.fillText('점수: ' + player.score, 400, 460);
+                // 텍스트 그림자 효과
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 3;
+                ctx.shadowOffsetY = 3;
+
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 48px "Noto Sans KR", Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🎉 Victory! 🎉', 400, 320);
+
+                ctx.fillStyle = '#FFF';
+                ctx.font = '24px "Noto Sans KR", Arial';
+                ctx.fillText('레벨 10 달성!', 400, 380);
+                ctx.fillText('점수: ' + player.score, 400, 420);
 
                 // 클리어 시간 표시 (분:초 형식)
-                let minutes = Math.floor(gameClearTime / 60);
-                let seconds = gameClearTime % 60;
-                let timeString = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-                ctx.fillText('클리어 시간: ' + timeString, 400, 490);
+                let minutes2 = Math.floor(gameClearTime / 60);
+                let seconds2 = gameClearTime % 60;
+                let timeString2 = minutes2 + ':' + (seconds2 < 10 ? '0' : '') + seconds2;
+                ctx.fillText('클리어 시간: ' + timeString2, 400, 460);
 
-                ctx.fillText('클릭 또는 스페이스바를 눌러 재시작', 400, 530);
+                ctx.font = '18px "Noto Sans KR", Arial';
+                ctx.fillText('클릭 또는 스페이스바를 눌러 재시작', 400, 510);
+
+                // 그림자 효과 제거
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
             }
         }
         
