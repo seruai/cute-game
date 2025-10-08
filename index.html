@@ -93,21 +93,6 @@
             .decoration-left, .decoration-right {
                 display: none;
             }
-            #game {
-                width: 100vw !important;
-                height: 100vh !important;
-                border-radius: 0;
-            }
-            .canvas-container {
-                padding: 0;
-                border-radius: 0;
-                width: 100vw;
-                height: 100vh;
-            }
-            .game-container {
-                padding: 0;
-                gap: 0;
-            }
         }
 
         .seaweed {
@@ -1126,13 +1111,13 @@
             if(keys['ArrowLeft'] || keys['a'] || keys['A']) { inputX = -1; keyboardMovement = true; usingKeyboard = true; }
             if(keys['ArrowRight'] || keys['d'] || keys['D']) { inputX = 1; keyboardMovement = true; usingKeyboard = true; }
 
-            // 터치 드래그 입력 처리
+            // 터치 입력 처리 (손가락이 터치한 곳으로 이동)
             if(!keyboardMovement && isTouching) {
-                let dx = mouse.x - touchStartX;
-                let dy = mouse.y - touchStartY;
+                let dx = mouse.x - player.x;
+                let dy = mouse.y - player.y;
                 let distance = Math.sqrt(dx * dx + dy * dy);
 
-                if(distance > 5) {
+                if(distance > 10) {
                     inputX = dx / distance;
                     inputY = dy / distance;
                     usingKeyboard = false;
@@ -1822,25 +1807,23 @@
             const touchX = touch.clientX - rect.left;
             const touchY = touch.clientY - rect.top;
 
-            // 게임 화면 크기에 맞게 좌표 변환 (모바일에서 캔버스가 확대될 수 있음)
+            // 게임 화면 크기에 맞게 좌표 변환
             const scaleX = 800 / rect.width;
             const scaleY = 800 / rect.height;
-            touchStartX = touchX * scaleX;
-            touchStartY = touchY * scaleY;
-            mouse.x = touchStartX;
-            mouse.y = touchStartY;
+            mouse.x = touchX * scaleX;
+            mouse.y = touchY * scaleY;
 
             isTouching = true;
 
             // 음소거 버튼 클릭 감지
-            const muteButtonDistance = Math.sqrt(Math.pow(touchX * scaleX - 760, 2) + Math.pow(touchY * scaleY - 30, 2));
+            const muteButtonDistance = Math.sqrt(Math.pow(mouse.x - 760, 2) + Math.pow(mouse.y - 30, 2));
             if(muteButtonDistance <= 25 && (gameState === 'playing' || gameState === 'intro')) {
                 toggleMute();
                 return;
             }
 
             if(gameState === 'intro') {
-                if(touchX * scaleX >= 720 && touchX * scaleX <= 780 && touchY * scaleY >= 20 && touchY * scaleY <= 60) {
+                if(mouse.x >= 720 && mouse.x <= 780 && mouse.y >= 20 && mouse.y <= 60) {
                     toggleMute();
                 } else {
                     startGame();
@@ -1849,13 +1832,13 @@
             } else if(gameState === 'gameOver' || gameState === 'victory') {
                 restartGame();
             } else if(isPaused) {
-                if(touchX * scaleX >= 220 && touchX * scaleX <= 340 && touchY * scaleY >= 440 && touchY * scaleY <= 480) {
+                if(mouse.x >= 220 && mouse.x <= 340 && mouse.y >= 440 && mouse.y <= 480) {
                     restartGame();
-                } else if(touchX * scaleX >= 360 && touchX * scaleX <= 480 && touchY * scaleY >= 440 && touchY * scaleY <= 480) {
+                } else if(mouse.x >= 360 && mouse.x <= 480 && mouse.y >= 440 && mouse.y <= 480) {
                     gameState = 'intro';
                     isPaused = false;
                     stopBGM();
-                } else if(touchX * scaleX >= 500 && touchX * scaleX <= 580 && touchY * scaleY >= 440 && touchY * scaleY <= 480) {
+                } else if(mouse.x >= 500 && mouse.x <= 580 && mouse.y >= 440 && mouse.y <= 480) {
                     toggleMute();
                 } else {
                     isPaused = false;
@@ -1890,20 +1873,6 @@
             isTouching = false;
             touchCount = 0;
         });
-
-        // 모바일에서 캔버스 크기 조정
-        function resizeCanvas() {
-            if(window.innerWidth <= 768) {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            } else {
-                canvas.width = 800;
-                canvas.height = 800;
-            }
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
 
         initAudio();
         gameLoop();
